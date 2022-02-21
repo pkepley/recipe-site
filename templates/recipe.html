@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>{{recipe_name}}</title>
+  </head>
+  <body onload="onLoadPage()">
+    <h1> {{recipe_name}} </h1>
+    <h2> Ingredients </h2>
+    <div id="ingredient_div">
+      <ol>
+  	{% for ingredient in ingredients %}
+  	<li> {{ingredient}} </li>
+  	{% endfor %}
+      </ol>
+     </div>
+
+    <h2> Directions </h2>
+    <div id="direction_div">
+      <ol>
+	{% for direction in directions %}
+	<li> {{direction}} </li>
+	{% endfor %}
+      </ol>
+    </div>
+
+    <div>
+      <button onclick="window.location.href='/recipe-site/'">Go Home</button>
+    </div>
+  </body>
+</html>

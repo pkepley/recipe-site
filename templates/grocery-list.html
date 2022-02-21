@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Grocery List Builder</title>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.13.3/js/standalone/selectize.min.js" integrity="sha512-pF+DNRwavWMukUv/LyzDyDMn8U2uvqYQdJN0Zvilr6DDo/56xPDZdDoyPDYZRSL4aOKO/FGKXTpzDyQJ8je8Qw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.13.3/css/selectize.default.min.css" integrity="sha512-H955AcCOE/fUjX4XWkN0FwjCYVV/zioSF6VpUKCcrGdR1Wa8paFWYixWYp85npbnx3i1kZCH4Rm4TRxut2+d5A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <script src="/recipe-site/static/grocery-list.js"></script>
+    <script>
+      var recipe_list = {
+	{% for recipe_name in recipe_name %}
+	    {{recipe_id[loop.index0]}}: "{{recipe_name}}",
+	{% endfor %}
+      };
+    </script>
+  </head>
+  <body onload="onLoadPage()">
+    <h1> Grocery List Builder </h1>
+    <h2> Recipes </h2>
+    <div id="recipe-div">
+      <table id="recipe-table">
+        <tr>
+          <th>Recipe</th>
+          <th>Quantity</th>
+        </tr>
+      </table>
+     </div>
+
+    <div>
+      <button onclick="plusRow()">Add Recipe</button>
+      <button onclick="minusRow()">Remove Recipe</button>
+      <button onclick="getGroceryListPrint()">Get Grocery List</button>
+    </div>
+    <div>
+    </div>
+
+    <div>
+      <button onclick="window.location.href='/recipe-site/'">Go Home</button>
+    </div>
+  </body>
+</html>
