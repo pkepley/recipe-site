@@ -24,6 +24,14 @@ def extract_data(fp):
     for row in contents:
         split_row = row.split(" ")
 
+        property_match = re.match(":.+?:", row)
+        if property_match:
+            prop = property_match.group(0).lower()
+            prop_val = row.replace(prop, "")
+            if prop != ':properties:' and prop != ':end:' and prop_val:
+                content_dict[prop.replace(":", "")] = prop_val
+                print(prop.replace(":", ""), "|", prop_val)
+
         if "*" in split_row:
             content_dict['title'] = (" ".join(split_row[1:])).strip()
 
@@ -93,6 +101,10 @@ if __name__ == "__main__":
     CREATE TABLE recipes (
        recipe_id INTEGER PRIMARY KEY AUTOINCREMENT,
        recipe_name TEXT NOT NULL,
+       prep_time TEXT,
+       cook_time TEXT,
+       servings  TEXT,
+       source_url TEXT,
        source_file TEXT NOT NULL
     );
     """)
@@ -122,10 +134,17 @@ if __name__ == "__main__":
 
     recipe_id = 0
     for recipe_dict in rslts:
+        # add some missing keys
+        for k in ['prep-time', 'cook-time', 'servings', 'source-url']:
+            if not k in recipe_dict:
+                recipe_dict[k] = None
+
+        # only create
         if 'title' in recipe_dict.keys():
             cur.execute(
-                "INSERT INTO recipes (recipe_name, source_file) VALUES (?,?)",
-                (recipe_dict['title'], recipe_dict['source_file'])
+                "INSERT INTO recipes (recipe_name, prep_time, cook_time, servings, source_url, source_file) VALUES (?,?,?,?,?,?)",
+                (recipe_dict['title'], recipe_dict['prep-time'], recipe_dict['cook-time'],
+                 recipe_dict['servings'], recipe_dict['source-url'], recipe_dict['source_file'])
             )
             recipe_id += 1
         else:
