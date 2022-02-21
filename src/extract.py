@@ -30,7 +30,6 @@ def extract_data(fp):
             prop_val = row.replace(prop, "")
             if prop != ':properties:' and prop != ':end:' and prop_val:
                 content_dict[prop.replace(":", "")] = prop_val
-                print(prop.replace(":", ""), "|", prop_val)
 
         if "*" in split_row:
             content_dict['title'] = (" ".join(split_row[1:])).strip()
@@ -71,7 +70,6 @@ def extract_data(fp):
                         content_curr[-1] = content_curr[-1] + row
 
             elif sub_section_key is not None:
-                #print(content_dict['title'], " ", k)
                 pass
 
     if sub_section_key is not None:
@@ -88,11 +86,13 @@ def extract_data(fp):
 
 
 if __name__ == "__main__":
-    rslts = []
-    for fp in glob.glob("./content/*.org"):
-        rslts.append(extract_data(fp))
+    from app import app
+    root_dir = app.root_path + "/../"
+    data_dir_in = root_dir + "/content/"
+    data_dir_out = root_dir + "/data/"
 
-    con = sqlite3.connect('recipe.db')
+
+    con = sqlite3.connect(f'{data_dir_out}/recipe.db')
     cur = con.cursor()
     cur.execute("""
        DROP TABLE IF EXISTS recipes;
@@ -131,6 +131,11 @@ if __name__ == "__main__":
        direction TEXT NOT NULL
     );
     """)
+
+    # list to hold extracted results
+    rslts = []
+    for fp in glob.glob(f"{data_dir_in}/*.org"):
+        rslts.append(extract_data(fp))
 
     recipe_id = 0
     for recipe_dict in rslts:

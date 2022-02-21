@@ -6,13 +6,19 @@ from flask import (
 )
 import sqlite3
 from markupsafe import escape
+import os
 
+
+# construct app and point app to useful folders
 app = Flask(__name__)
+app.template_folder = app.root_path + "/../templates/"
+app.static_folder = app.root_path + "/../static/"
+data_dir = app.root_path + "/../data/"
 
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
-        db = g._database = sqlite3.connect('recipe.db')
+        db = g._database = sqlite3.connect(f"{data_dir}/recipe.db")
     return db
 
 @app.teardown_appcontext
@@ -56,12 +62,8 @@ def recipe_site():
     )
 
 def get_recipe(recipe_id):
-    #recipe_id = request.args.get("recipe_id")
-    print(recipe_id)
-
     db = get_db()
     cur = db.cursor()
-
 
     ## Get the Ingredients
     query = cur.execute('''
@@ -91,7 +93,6 @@ def get_recipe(recipe_id):
         (recipe_id,)
     )
     rows = query.fetchall()
-    print(rows)
 
     # convert values
     columns = [desc[0] for desc in cur.description]
@@ -173,8 +174,6 @@ def render_grocery_print():
         for i, c in enumerate(columns):
             column_vals[c].append(row[i])
 
-    print(column_vals)
-
     return render_template(
         'grocery-list-print.html',
         ingredient_list = column_vals['ingredient']
@@ -182,4 +181,4 @@ def render_grocery_print():
 
 @app.route('/recipe-site/static/<path:path>')
 def send_js(path):
-    return send_from_directory('static', path)
+    return send_from_directory(app.static_folder, path)
