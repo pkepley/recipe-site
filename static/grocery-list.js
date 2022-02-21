@@ -86,6 +86,6 @@ function getGroceryListPrint() {
 
 function onLoadPage() {
   for (var i = 0; i < nRecipeRows; i++) {
-    addTableRow("recipe-table", i, recipe_list);
+    addTableRow("recipe-table-body", i, recipe_list);
   }
 }
