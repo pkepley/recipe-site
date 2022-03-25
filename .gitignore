@@ -2,3 +2,6 @@ content
 *__pycache__
 recipe.db
 *~
+static/selectize*
+static/jquery*
+static/favicon.ico

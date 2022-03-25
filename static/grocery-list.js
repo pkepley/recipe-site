@@ -3,6 +3,13 @@ var nRecipeRows = 1;
 function populateSelect(selectId, options) {
   const sel = document.getElementById(selectId);
 
+  var opt = document.createElement("option");
+  opt.setAttribute("selected", "true");
+  opt.setAttribute("value", "");
+  opt.setAttribute("disabled", "");
+  opt.text = "-- select an option --";
+  sel.add(opt);
+
   for (var k of Object.keys(options)) {
     var opt = document.createElement("option");
     opt.value = k;
@@ -10,10 +17,10 @@ function populateSelect(selectId, options) {
     sel.add(opt);
   }
 
-   $("#" + selectId).selectize({
-     create: true,
-     sortField: "text"
-   });
+  $("#" + selectId).selectize({
+    create: true,
+    sortField: "text"
+  });
 }
 
 function addTableRow(tableId, maxRow, options) {

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Recipe Scheduler Grocery List Builder</title>
+    {% include 'common-loads.html' %}
+    <script src="/recipe-site/static/recipe-scheduler.js"></script>
+    <script>
+      var recipe_list = {
+{% for recipe_name in recipe_name %}
+    {{recipe_id[loop.index0]}}: "{{recipe_name}}",
+{% endfor %}
+      };
+      var scheduled_recipe_ids = {{scheduled_recipe_ids}};
+      var scheduled_day_of_week = {{scheduled_day_of_week}};
+      var scheduled_quantities = {{scheduled_quantities}};
+      var scheduled_recipe_names = scheduled_recipe_ids.map(i =>  recipe_list[i]);
+      console.log(scheduled_recipe_names);
+    </script>
+  </head>
+  <body onload="onLoadPage()">
+    <h1> Grocery List Scheduler <span id="week-start">{{week_start}}</span></h1>
+    <h2> Recipes </h2>
+    <div>
+<template>
+  <b-calendar block locale="en-US"></b-calendar>
+</template>
+    </div>
+    <div id="recipe-div">
+      <table id="recipe-table" width="100%">
+        <col style="width:25%">
+        <col style="width:65%">
+        <col style="width:10%">
+        <thead>
+        <tr>
+          <th>Week Day</th>
+          <th>Recipe</th>
+          <th>Quantity</th>
+        </tr>
+        </thead>
+        <tbody id="recipe-table-body">
+	      {% for day in ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] %}
+        <tr>
+          <td id="date-{{day}}">{{day}}</td>
+          <td id="select-{{day}}">
+            <select id="recipe-select-{{day}}"></select>
+          </td>
+          <td id="amount-{{day}}">
+            <input id="cnt-{{day}}" value=0 type=number min=0 class="form-control" ></input>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+     </div>
+
+    <div>
+      <button onclick="getGroceryListPrint()">Get Grocery List</button>
+    </div>
+
+    <div>
+      <button onclick="setGroceryList()">Set Grocery List</button>
+    </div>
+
+    <div>
+      <button onclick="changeWeek(-1)">Edit Last Week</button>
+    </div>
+
+    <div>
+      <button onclick="changeWeek(+1)">Edit Next Week</button>
+    </div>
+
+    <div>
+      <button onclick="window.location.href='/recipe-site/'">Go Home</button>
+    </div>
+  </body>
+</html>
