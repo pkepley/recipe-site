@@ -4,4 +4,5 @@ recipe.db
 *~
 static/selectize*
 static/jquery*
+static/bootstrap*
 static/favicon.ico
