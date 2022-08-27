@@ -33,9 +33,11 @@ function populateSelect(i, options) {
 
   $("#" + selId).selectize({
     plugins: ["remove_button"],
-    persist: false,
-    create: true,
+    //persist: false,
+    create: false,
     sortField: "text",
+    maxItems: 1,
+    closeAfterSelect: true,
     onChange:function(value){
       if (value != "") {
         enableCount(i);
