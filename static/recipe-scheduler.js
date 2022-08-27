@@ -104,10 +104,57 @@ function setGroceryList() {
 }
 
 function setRecipe(i, recipe_id, recipe_amount) {
+  // set recipe
   const selId = `recipe-select-${weekDays[i]}`;
   var $select = $('#' + selId).selectize();
   var control = $select[0].selectize;
   control.setValue(recipe_id);
+
+  // set amount
+  var cntId = `cnt-${weekDays[i]}`;
+  document.getElementById(cntId).value = recipe_amount;
+
+}
+
+function getRecipe(i) {
+  // recipe_id
+  const selId = `recipe-select-${weekDays[i]}`;
+  const $select = $('#' + selId).selectize();
+  const control = $select[0].selectize;
+
+  // recipe_amount
+  const cntId = `cnt-${weekDays[i]}`;
+  const recipe_amount = document.getElementById(cntId).value;
+
+  return {
+    recipe_id: control.getValue(),
+    recipe_amount: recipe_amount
+  }
+}
+
+function swapRecipes(srcIdx, tgtIdx) {
+  const srcRecipeData = getRecipe(srcIdx);
+  const tgtRecipeData = getRecipe(tgtIdx);
+  setRecipe(tgtIdx, srcRecipeData.recipe_id, srcRecipeData.recipe_amount);
+  setRecipe(srcIdx, tgtRecipeData.recipe_id, tgtRecipeData.recipe_amount);
+}
+
+function moveUp(srcDay) {
+  if (srcDay != "sun"){
+    const srcIdx = weekDays.indexOf(srcDay)
+    const tgtIdx = srcIdx - 1;
+    const tgtDay = weekDays[tgtIdx];
+    swapRecipes(srcIdx, tgtIdx);
+  }
+}
+
+function moveDown(srcDay) {
+  if (srcDay != "sat"){
+    const srcIdx = weekDays.indexOf(srcDay)
+    const tgtIdx = srcIdx + 1;
+    const tgtDay = weekDays[tgtIdx];
+    swapRecipes(srcIdx, tgtIdx);
+  }
 }
 
 function changeWeek(n_weeks_change) {

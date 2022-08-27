@@ -28,11 +28,14 @@
     <div id="recipe-div">
       <table id="recipe-table" width="100%">
         <col style="width:25%">
-        <col style="width:65%">
+        <col style="width:2.5%">
+        <col style="width:2.5%">
+        <col style="width:60%">
         <col style="width:10%">
         <thead>
         <tr>
           <th>Week Day</th>
+          <th colspan="2"></th>
           <th>Recipe</th>
           <th>Quantity</th>
         </tr>
@@ -41,6 +44,20 @@
 	      {% for day in ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] %}
         <tr>
           <td id="date-{{day}}">{{day}}</td>
+          <td>
+            {% if day != "sun" %}
+            <a onclick="moveUp('{{day}}')">
+              <i class="bi bi-arrow-up"></i>
+            </a>
+            {% endif %}
+          </td>
+          <td>
+            {% if day != "sat" %}
+            <a onclick="moveDown('{{day}}')">
+              <i class="bi bi-arrow-down"></i>
+            </a>
+            {% endif %}
+          </td>
           <td id="select-{{day}}">
             <select id="recipe-select-{{day}}"></select>
           </td>
