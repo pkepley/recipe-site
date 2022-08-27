@@ -1,14 +1,11 @@
-from glob import glob
 from flask import (
-    Flask, render_template, escape,
+    Flask, render_template,
     request, g, jsonify, url_for,
     send_from_directory
 )
 import sqlite3
 from datetime import datetime, timedelta
-from markupsafe import escape
 import os
-import json
 
 
 # construct app and point app to useful folders
