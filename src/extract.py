@@ -1,98 +1,132 @@
 import sqlite3
-import os
 import glob
 import re
 
+def extract_level(content: str, level: int):
+    if level == 1:
+        section_re_str = r"(?:\*\s).+?(?=\n\*\s|\Z)$"
+    else:
+        section_re_str = fr'^\*{{{level}}}\s.+?(?=\n\*{{1,{level}}}\s|\Z)'
+
+    section_re = re.compile(section_re_str, re.MULTILINE|re.DOTALL)
+    rslt = re.findall(section_re, content)
+
+    return rslt
+
+
+def extract_level_name(content: str, level: int):
+    level_name_re = fr"(?<=\*{{{level}}}\s)(.+?)\n"
+    level_name = re.findall(level_name_re, content, re.IGNORECASE)
+
+    if level_name is None:
+        return ""
+    else:
+        return level_name[0]
+
+
+def extract_properties(content: str):
+    properties = dict()
+
+    # find property blocks
+    properties_block_re = re.compile(
+        r"(?<=:properties:)(.+?)(?=:end:)",
+        re.IGNORECASE|re.DOTALL|re.MULTILINE
+    )
+    property_blocks = re.findall(properties_block_re, content)
+
+    # extract properties
+    prop_re = r":(?!properties)(?!end).+?:"
+
+    for block in property_blocks:
+        content_rows = block.split("\n")
+        for row in content_rows:
+            property_match = re.match(prop_re, row, re.IGNORECASE)
+            if property_match:
+                prop = re.sub(prop_re, '', row, re.IGNORECASE)
+                prop_val = prop.strip()
+                if prop:
+                    prop_key = property_match[0].replace(":", "")
+                    properties[prop_key] = prop_val
+
+    return properties
+
+def extract_ingredients(content: str):
+    ingredient_re_str = r"(?:^\s*-\s)(.+?)(?=\n\s*-\s|\Z)"
+    sub_sub_levels = extract_level(content, 3)
+
+    ingredients = []
+    if sub_sub_levels:
+        for ssl in sub_sub_levels:
+            # remove sub-sub-level from the input-content
+            content = content.replace(ssl, "")
+            ssl_name = extract_level_name(ssl, 3)
+            ssl_ingredients = re.findall(ingredient_re_str, ssl, re.MULTILINE|re.DOTALL)
+            ingredients.extend([
+                (ssl_name, ingr.replace("\n", " ").replace("  ", " ")) for ingr in ssl_ingredients
+            ])
+
+    # process sub-level ingredients (not subordinate to any sub-levels)
+    sl_ingredients = re.findall(ingredient_re_str, content, re.MULTILINE|re.DOTALL)
+    ingredients.extend([
+        (None, ingr.replace("\n", " ").replace("  ", " ")) for ingr in sl_ingredients
+    ])
+
+    return ingredients
+
+def extract_directions(content: str):
+    directions_re_str = r"(?:^\s*\d\.\s)(.+?)(?=\n\s*\d\.\s|\Z)"
+    rslts = re.findall(directions_re_str, content, re.MULTILINE|re.DOTALL)
+
+    return rslts
 
 def extract_data(fp):
+    content_dict = dict()
+
+    content_dict['source_file'] = fp.split("/")[-1]
     with open(fp, "r") as f:
-        contents = [
+        content_rows = [
             r.strip().replace(u'\xa0', u' ')
             for r in list(f.readlines())
         ]
-        contents = [
-            c for c in contents if len(c) > 0
+        content_rows = [
+            c for c in content_rows if len(c) > 0
         ]
 
-    content_dict = dict()
-    content_curr = []
-    sub_section_key = None
-    sub_sub_section_key = None
+    if not content_rows:
+        return content_dict
 
-    content_dict['source_file'] = fp.split("/")[-1]
+    content = "\n".join(content_rows)
+    recipes = extract_level(content, 1)
 
-    for row in contents:
-        split_row = row.split(" ")
+    all_recipes = []
 
-        property_match = re.match(":.+?:", row)
-        if property_match:
-            prop = property_match.group(0).lower()
-            prop_val = row.replace(prop, "")
-            if prop != ':properties:' and prop != ':end:' and prop_val:
-                content_dict[prop.replace(":", "")] = prop_val
+    for recipe in recipes:
+        recipe_content = dict()
+        recipe = recipes[0]
 
-        if "*" in split_row:
-            content_dict['title'] = (" ".join(split_row[1:])).strip()
+        recipe_content['source_file'] = fp
+        recipe_content['title']= extract_level_name(recipe, 1)
 
-        if "**" in split_row:
-            # clear out last round
-            if sub_section_key is not None:
-                # get rid of beginning of line characters
-                if sub_section_key == "directions":
-                    content_curr = [
-                        re.sub("^\d+\. ", "", a.strip()) for a in content_curr
-                    ]
+        recipe_content.update(extract_properties(recipe))
 
-                content_dict[sub_section_key] = (
-                    [a for a in content_curr if len(a) > 0]
-                )
+        sub_sections = extract_level(recipe, 2)
+        sub_section_names = [extract_level_name(ss, 2).lower() for ss in sub_sections]
 
-            # set-up next round
-            sub_section_key = " ".join(split_row[1:]).lower()
-            sub_sub_section_key = None
-            content_curr = []
+        if 'ingredients' in sub_section_names:
+            ingredients_block = sub_sections[sub_section_names.index('ingredients')]
+            recipe_content['ingredients'] = extract_ingredients(ingredients_block)
 
-        else:
-            if "***" in split_row:
-                sub_sub_section_key = " ".join(split_row[1:]).lower()
+        if 'directions' in sub_section_names:
+            directions_block = sub_sections[sub_section_names.index('directions')]
+            recipe_content['directions'] = extract_directions(directions_block)
 
-            elif sub_section_key == 'ingredients':
-                if row.strip():
-                    curr_ingredient = row.strip().replace("- ", "").strip()
-                    content_curr.append((sub_sub_section_key, curr_ingredient))
+        all_recipes.append(recipe_content)
 
-            elif sub_section_key == 'directions':
-                if row.strip():
-                    row_split = row.split(".")
-                    if row_split[0] == str(len(content_curr) + 1):
-                        content_curr.append(row)
-                    else:
-                        content_curr[-1] = content_curr[-1] + row
-
-            elif sub_section_key is not None:
-                pass
-
-    if sub_section_key is not None:
-        # get rid of beginning of line characters
-        if sub_section_key == "directions":
-            content_curr = [
-                re.sub("^\d+\. ", "", a.strip()) for a in content_curr
-            ]
-        content_dict[sub_section_key] = (
-            [a for a in content_curr if len(a) > 0]
-        )
-
-    return content_dict
+    return all_recipes
 
 
-if __name__ == "__main__":
-    from app import app
-    root_dir = app.root_path + "/../"
-    data_dir_in = root_dir + "/content/"
-    data_dir_out = root_dir + "/data/"
-
-
-    con = sqlite3.connect(f'{data_dir_out}/recipe.db')
+def create_db(data_dir_out, dbname='recipe'):
+    con = sqlite3.connect(f'{data_dir_out}/{dbname}.db')
     cur = con.cursor()
     cur.execute("""
        DROP TABLE IF EXISTS recipes;
@@ -122,7 +156,7 @@ if __name__ == "__main__":
     """)
 
     cur.execute("""
-       DROP TABLE IF EXISTS directions;
+          DROP TABLE IF EXISTS directions;
     """)
     cur.execute("""
     CREATE TABLE directions (
@@ -132,10 +166,16 @@ if __name__ == "__main__":
     );
     """)
 
+
+def update_db(data_dir_out, fps, dbname='recipe'):
+    # TODO: note db must exist first!
+    con = sqlite3.connect(f'{data_dir_out}/{dbname}.db')
+    cur = con.cursor()
+
     # list to hold extracted results
     rslts = []
-    for fp in glob.glob(f"{data_dir_in}/*.org"):
-        rslts.append(extract_data(fp))
+    for fp in fps:
+        rslts.extend(extract_data(fp))
 
     recipe_id = 0
     for recipe_dict in rslts:
@@ -177,3 +217,15 @@ if __name__ == "__main__":
 
     con.commit()
     con.close()
+
+if __name__ == "__main__":
+    from app import app
+    root_dir = app.root_path + "/../"
+    data_dir_in = root_dir + "/content/"
+    data_dir_out = root_dir + "/data/"
+
+    # list to hold extracted results
+    rslts = []
+    fps = glob.glob(f"{data_dir_in}/*.org")
+    create_db(data_dir_out, dbname='recipe')
+    update_db(data_dir_out, fps, dbname='recipe')
