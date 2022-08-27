@@ -2,7 +2,5 @@ content
 *__pycache__
 recipe.db
 *~
-static/selectize*
-static/jquery*
-static/bootstrap*
+static/third-party
 static/favicon.ico
