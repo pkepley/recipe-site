@@ -4,3 +4,5 @@ recipe.db
 *~
 static/third-party
 static/favicon.ico
+.env
+.flaskenv
