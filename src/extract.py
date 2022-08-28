@@ -1,6 +1,7 @@
-import sqlite3
-import glob
+from pathlib import Path
 import re
+import sqlite3
+
 
 def extract_level(content: str, level: int):
     if level == 1:
@@ -50,6 +51,7 @@ def extract_properties(content: str):
 
     return properties
 
+
 def extract_ingredients(content: str):
     ingredient_re_str = r"(?:^\s*-\s)(.+?)(?=\n\s*-\s|\Z)"
     sub_sub_levels = extract_level(content, 3)
@@ -73,16 +75,20 @@ def extract_ingredients(content: str):
 
     return ingredients
 
+
 def extract_directions(content: str):
     directions_re_str = r"(?:^\s*\d\.\s)(.+?)(?=\n\s*\d\.\s|\Z)"
     rslts = re.findall(directions_re_str, content, re.MULTILINE|re.DOTALL)
 
     return rslts
 
+
 def extract_data(fp):
     content_dict = dict()
 
-    content_dict['source_file'] = fp.split("/")[-1]
+    fp = Path(fp)
+    source_file = fp.name
+
     with open(fp, "r") as f:
         content_rows = [
             r.strip().replace(u'\xa0', u' ')
@@ -104,7 +110,8 @@ def extract_data(fp):
         recipe_content = dict()
         recipe = recipes[0]
 
-        recipe_content['source_file'] = fp
+        recipe_content['source_file'] = source_file
+
         recipe_content['title']= extract_level_name(recipe, 1)
 
         recipe_content.update(extract_properties(recipe))
@@ -125,14 +132,25 @@ def extract_data(fp):
     return all_recipes
 
 
+def create_db_destructive(data_dir_out, dbname='recipe'):
+    con = sqlite3.connect(f'{data_dir_out}/{dbname}.db')
+    cur = con.cursor()
+
+    cur.execute("DROP TABLE IF EXISTS recipes")
+    cur.execute("DROP TABLE IF EXISTS ingredients")
+    cur.execute("DROP TABLE IF EXISTS directions")
+    create_db(data_dir_out, dbname=dbname)
+
+    con.commit()
+    con.close()
+
+
 def create_db(data_dir_out, dbname='recipe'):
     con = sqlite3.connect(f'{data_dir_out}/{dbname}.db')
     cur = con.cursor()
+
     cur.execute("""
-       DROP TABLE IF EXISTS recipes;
-    """)
-    cur.execute("""
-    CREATE TABLE recipes (
+    CREATE TABLE IF NOT EXISTS recipes (
        recipe_id INTEGER PRIMARY KEY AUTOINCREMENT,
        recipe_name TEXT NOT NULL,
        prep_time TEXT,
@@ -144,10 +162,7 @@ def create_db(data_dir_out, dbname='recipe'):
     """)
 
     cur.execute("""
-       DROP TABLE IF EXISTS ingredients;
-    """)
-    cur.execute("""
-    CREATE TABLE ingredients (
+    CREATE TABLE IF NOT EXISTS ingredients (
        recipe_id INTEGER,
        recipe_step TEXT,
        ingredient_number INTEGER,
@@ -156,10 +171,7 @@ def create_db(data_dir_out, dbname='recipe'):
     """)
 
     cur.execute("""
-          DROP TABLE IF EXISTS directions;
-    """)
-    cur.execute("""
-    CREATE TABLE directions (
+    CREATE TABLE IF NOT EXISTS directions (
        recipe_id INTEGER,
        direction_number INTEGER,
        direction TEXT NOT NULL
@@ -172,13 +184,32 @@ def update_db(data_dir_out, fps, dbname='recipe'):
     con = sqlite3.connect(f'{data_dir_out}/{dbname}.db')
     cur = con.cursor()
 
-    # list to hold extracted results
-    rslts = []
-    for fp in fps:
-        rslts.extend(extract_data(fp))
+    # get number of existing recipes
+    cur.execute("select max(recipe_id) from recipes")
+    max_recipe_id = cur.fetchone()[0]
+    if max_recipe_id is None:
+        max_recipe_id = 0
 
-    recipe_id = 0
-    for recipe_dict in rslts:
+    # list to hold existing recipes
+    cur.execute("select recipe_name, source_file from recipes")
+    existing_recipes = set(cur.fetchall())
+
+    # list to hold extracted results
+    extracted_recipes = []
+    for fp in fps:
+        extracted_recipes.extend(extract_data(fp))
+
+    # list to hold new recipes
+    new_recipes = [
+        recipe_dict for recipe_dict in extracted_recipes if
+        (recipe_dict['title'], recipe_dict['source_file'])
+        not in existing_recipes
+    ]
+
+    for recipe_dict in new_recipes:
+        # message
+        print(f"Inserting {recipe_dict['title']}")
+
         # add some missing keys
         for k in ['prep-time', 'cook-time', 'servings', 'source-url']:
             if not k in recipe_dict:
@@ -191,9 +222,17 @@ def update_db(data_dir_out, fps, dbname='recipe'):
                 (recipe_dict['title'], recipe_dict['prep-time'], recipe_dict['cook-time'],
                  recipe_dict['servings'], recipe_dict['source-url'], recipe_dict['source_file'])
             )
-            recipe_id += 1
+
+            # get the assigned id - take max just in case
+            cur.execute(
+                "select max(recipe_id) from recipes where recipe_name = ? and source_file = ?",
+                (recipe_dict['title'], recipe_dict['source_file'])
+            )
+            recipe_id = cur.fetchone()[0]
+
         else:
             print(recipe_dict)
+            break
 
         if 'ingredients' in recipe_dict.keys():
             ingredient_list = recipe_dict['ingredients']
@@ -218,6 +257,17 @@ def update_db(data_dir_out, fps, dbname='recipe'):
     con.commit()
     con.close()
 
+
+def _remove_recipe_(data_dir_out, recipe_id, dbname='recipe'):
+    con = sqlite3.connect(f'{data_dir_out}/{dbname}.db')
+    cur = con.cursor()
+    cur.execute("delete from recipes where recipe_id = ?", (recipe_id,))
+    cur.execute("delete from directions  where recipe_id = ?", (recipe_id,))
+    cur.execute("delete from ingredients where recipe_id = ?", (recipe_id,))
+    con.commit()
+    con.close()
+
+
 if __name__ == "__main__":
     from app import app
     root_dir = app.root_path + "/../"
@@ -226,6 +276,6 @@ if __name__ == "__main__":
 
     # list to hold extracted results
     rslts = []
-    fps = glob.glob(f"{data_dir_in}/*.org")
+    fps = Path(data_dir_in).glob(f"*.org")
     create_db(data_dir_out, dbname='recipe')
     update_db(data_dir_out, fps, dbname='recipe')
