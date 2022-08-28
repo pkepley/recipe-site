@@ -5,6 +5,7 @@
     {% include 'common-loads.html' %}
   </head>
   <body onload="onLoadPage()">
+    <div class="container">
     <h1> {{recipe_name}} </h1>
     <h2> Ingredients </h2>
     <div id="ingredient_div">
@@ -25,7 +26,8 @@
     </div>
 
     <div>
-      <button onclick="window.location.href='/recipe-site/'">Go Home</button>
+      <button class="btn btn-primary" onclick="window.location.href='/recipe-site/'"> <i class="bi bi-house-fill"></i> Go Home</button>
+    </div>
     </div>
   </body>
 </html>

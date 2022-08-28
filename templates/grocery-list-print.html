@@ -2,21 +2,22 @@
 <html>
   <head>
     <title>Grocery List</title>
+    {% include 'common-loads.html' %}
     <!-- <script src="/recipe-site/static/grocery-list-print.js"></script> -->
   </head>
   <body onload="onLoadPage()">
-    <h1> Grocery List </h1>
-
-    <div id="ingredient_div">
-      <ul id="inredients">
-	    {% for ingredient in ingredient_list %}
-	      <li> {{ingredient}} </li>
-	    {% endfor %}
-      </ul>
-    </div>
-
-    <div>
-      <button onclick="window.location.href='/recipe-site/'">Go Home</button>
+    <div class="container">
+      <h1> Grocery List </h1>
+      <div id="ingredient_div">
+        <ul id="inredients">
+	      {% for ingredient in ingredient_list %}
+	        <li> {{ingredient}} </li>
+	      {% endfor %}
+        </ul>
+      </div>
+      <div>
+        <button class="btn btn-primary" onclick="window.location.href='/recipe-site/'"><i class="bi bi-house-fill"></i> Go Home</button>
+      </div>
     </div>
   </body>
 </html>

@@ -7,36 +7,38 @@
     <link rel="stylesheet" href="/recipe-site/static/main.css">
   </head>
   <body onload="onLoadPage()">
+    <div class="container">
     <h1>Recipe Site</h1>
-
     <div id="todays_div">
-      <h2>Goto Today's Recipe</h2>
+      {% if todays_recipe_id != "NONE" %}
+      <h2><i class="bi bi-calendar-event"></i> View Today's Scheduled Recipe</h2>
       <script>todays_recipe_id = {{todays_recipe_id}}</script>
-      <button onclick="todaysRecipeRedirect()">Show Recipe</button>
+      <button class="btn btn-primary" onclick="todaysRecipeRedirect()" style='width="50%"'>Show Recipe</button>
+      {% endif %}
     </div>
-
+    <br />
     <div id="selection_div">
-      <h2>View a Recipe</h2>
+      <h2><i class="bi bi-search"></i> View a Recipe</h2>
       <select id="recipe_list" name="recipe">
         <option disabled selected value> -- select an option -- </option>
 	      {% for recipe_name in recipe_name %}
 	      <option value="{{recipe_id[loop.index0]}}"> {{recipe_name}} </option>
 	      {% endfor %}
       </select>
-      <button onclick="recipeRedirect()">Show Recipe</button>
+      <button class="btn btn-primary" onclick="recipeRedirect()">Show Recipe</button>
     </div>
-
+    <br />
     <div>
-      <h2>Recipe Scheduler</h2>
+      <h2><i class="bi bi-calendar-week"></i> Recipe Scheduler</h2>
       <p> Schedule some recipes! </p>
-      <button onclick="scheduleRedirect()">Go!</button>
+      <button class="btn btn-primary" onclick="scheduleRedirect()">Go!</button>
     </div>
-  </body>
-
+    <br />
     <div>
-      <h2>Grocery List Builder</h2>
+      <h2><i class="bi bi-list-ol"></i> Grocery List Builder</h2>
       <p>Build a grocery list! </p>
-      <button onclick="window.location.href='/recipe-site/grocery-list/'">Go!</button>
+      <button class="btn btn-primary" onclick="window.location.href='/recipe-site/grocery-list/'">Go!</button>
     </div>
+  </div>
   </body>
 </html>
