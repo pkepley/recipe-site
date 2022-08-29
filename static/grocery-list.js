@@ -83,12 +83,26 @@ function getRecipeIds() {
   return recipeIds;
 }
 
+function getRecipeCounts() {
+  var recipeCnts = [];
+  for (var i = 1; i <= nRecipeRows; i++) {
+    var selId = `recipe-count-${i}`;
+    console.log(selId);
+    var recipe = document.getElementById(selId);
+    recipeCnts.push(recipe.value);
+  }
+
+  return recipeCnts;
+}
+
 function getGroceryListPrint() {
   var recipeIds = getRecipeIds();
+  var recipeCnts = getRecipeCounts();
 
-  var newUrl = "/recipe-site/grocery-list-print/?recipe_ids=";
-  newUrl = newUrl + recipeIds.join(",")
-  document.location.href = newUrl
+  var newUrl = "/recipe-site/grocery-list-print/";
+  newUrl = newUrl + "?recipe_ids=" + recipeIds.join(",");
+  newUrl = newUrl + "&recipe_quantities=" + recipeCnts.join(",");
+  document.location.href = newUrl;
 }
 
 function onLoadPage() {

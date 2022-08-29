@@ -6,6 +6,7 @@ from flask import (
 import sqlite3
 from datetime import datetime, timedelta
 import os
+import re
 
 
 # construct app and point app to useful folders
@@ -181,16 +182,21 @@ def render_grocery_print():
     # which recipes to display?
     recipe_ids = request.args.get('recipe_ids')
     if recipe_ids is not None:
-        recipe_ids = [idx.strip() for idx in recipe_ids.split(",")]
+        recipe_ids = re.findall(r'\d+', recipe_ids)
     else:
         recipe_ids = []
+    recipe_ids = [int(idx) for idx in recipe_ids]
 
     # how much to display?
     recipe_quantities = request.args.get('recipe_quantities')
     if recipe_quantities is not None:
-        recipe_quantities.split(",")
+        recipe_quantities = re.findall(r'\d+', recipe_quantities)
     else:
-        recipe_quantities = [1 for idx in recipe_ids if idx.strip() != ""]
+        recipe_quantities = ['1' for idx in recipe_ids]
+    recipe_quantities = [int(n) for n in recipe_quantities]
+
+    # convert to map
+    recipe_amt_map = {idx: amt for (idx, amt) in zip(recipe_ids, recipe_quantities)}
 
     # fetch the recipes
     db = get_db()
@@ -198,6 +204,7 @@ def render_grocery_print():
     query = c.execute(
         f"""
             SELECT
+              recipe_id,
               ingredient
             FROM ingredients
             WHERE recipe_id in ({','.join(['?']*len(recipe_ids))})
@@ -209,16 +216,20 @@ def render_grocery_print():
     # convert values
     columns = [desc[0] for desc in c.description]
     column_vals = dict([(c, []) for c in columns])
-
     for row in rows:
         for i, c in enumerate(columns):
             column_vals[c].append(row[i])
 
+    # multiplier for each ingredient?
+    ingredient_quantities = [
+        recipe_amt_map[idx] for idx in column_vals['recipe_id']
+    ]
 
     return render_template(
         'grocery-list-print.html',
-        ingredient_list = column_vals['ingredient'],
-        ingredient_quantities = recipe_quantities
+        # TODO: for now, send as a zip, because zips are hard(ish) with jinja
+        # later, we could just render on front end instead
+        ingredient_zip = zip(column_vals['ingredient'], ingredient_quantities)
     )
 
 @app.route('/recipe-site/recipe-scheduler/', methods=['GET'])

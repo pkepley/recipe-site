@@ -10,8 +10,8 @@
       <h1> Grocery List </h1>
       <div id="ingredient_div">
         <ul id="inredients">
-	      {% for ingredient in ingredient_list %}
-	        <li> {{ingredient}} </li>
+	      {% for (ingredient, amt) in ingredient_zip %}
+	        <li> {% if amt > 1 %} {{amt}} x {% endif %}{{ingredient}} </li>
 	      {% endfor %}
         </ul>
       </div>

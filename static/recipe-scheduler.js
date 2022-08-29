@@ -80,10 +80,12 @@ function getWeekStart() {
 
 function getGroceryListPrint() {
   var recipeIds = getRecipeIds();
+  var recipeCnts = getRecipeCounts();
 
-  var newUrl = "/recipe-site/grocery-list-print/?recipe_ids=";
-  newUrl = newUrl + recipeIds.join(",")
-  document.location.href = newUrl
+  var newUrl = "/recipe-site/grocery-list-print/";
+  newUrl = newUrl + "?recipe_ids=" + recipeIds.join(",");
+  newUrl = newUrl + "&recipe_quantities=" + recipeCnts.join(",");
+  document.location.href = newUrl;
 }
 
 function setGroceryList() {
