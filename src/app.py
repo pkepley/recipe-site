@@ -14,6 +14,7 @@ app = Flask(__name__)
 app.template_folder = app.root_path + "/../templates/"
 app.static_folder = app.root_path + "/../static/"
 data_dir = app.root_path + "/../data/"
+print(f"Using data_dir = {data_dir}")
 
 @app.route('/favicon.ico')
 def favicon():
@@ -92,7 +93,8 @@ def get_recipe(recipe_id):
     ## Get the Ingredients
     query = cur.execute('''
         SELECT
-           recipe_name
+           recipe_name,
+           source_url
         FROM recipes
         WHERE recipe_id = ?
         ;
@@ -102,8 +104,10 @@ def get_recipe(recipe_id):
     row = query.fetchone()
     if row:
         recipe_name = row[0]
+        source_url  = row[1] if row[1] is not None else ""
     else:
         recipe_name = "???"
+        source_url  = ""
 
     ## Get the Ingredients
     query = cur.execute('''
@@ -151,7 +155,8 @@ def get_recipe(recipe_id):
     rslt = dict(
         recipe_name = recipe_name,
         ingredients = ingredient_rslt['ingredient'],
-        directions = direction_rslt['direction']
+        directions = direction_rslt['direction'],
+        source_url = source_url
     )
 
     return rslt
@@ -162,9 +167,10 @@ def render_recipe(recipe_id):
 
     return render_template(
         'recipe.html',
-        recipe_name =recipe_data['recipe_name'],
-        ingredients =recipe_data['ingredients'],
-        directions  =recipe_data['directions']
+        recipe_name=recipe_data['recipe_name'],
+        ingredients=recipe_data['ingredients'],
+        directions=recipe_data['directions'],
+        source_url=recipe_data['source_url']
     )
 
 @app.route('/recipe-site/grocery-list/')
