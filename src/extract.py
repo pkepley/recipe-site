@@ -128,188 +128,30 @@ def extract_data(fp):
     return all_recipes
 
 
-def create_db_destructive(con):
-    cur = con.cursor()
-
-    cur.execute("DROP TABLE IF EXISTS recipes")
-    cur.execute("DROP TABLE IF EXISTS ingredients")
-    cur.execute("DROP TABLE IF EXISTS directions")
-    create_db(con)
-
-    con.commit()
-
-
-def create_db(con):
-    cur = con.cursor()
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS recipes (
-       recipe_id INTEGER PRIMARY KEY AUTOINCREMENT,
-       recipe_name TEXT NOT NULL,
-       prep_time TEXT,
-       cook_time TEXT,
-       servings  TEXT,
-       source_url TEXT,
-       source_file TEXT NOT NULL
-    );
-    """)
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS ingredients (
-       recipe_id INTEGER,
-       recipe_step TEXT,
-       ingredient_number INTEGER,
-       ingredient TEXT NOT NULL
-    );
-    """)
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS directions (
-       recipe_id INTEGER,
-       direction_number INTEGER,
-       direction TEXT NOT NULL
-    );
-    """)
-
-
-def update_db(con, fps):
-    # TODO: note db must exist first!
-    cur = con.cursor()
-
-    # get number of existing recipes
-    cur.execute("select max(recipe_id) from recipes")
-    max_recipe_id = cur.fetchone()[0]
-    if max_recipe_id is None:
-        max_recipe_id = 0
-
-    # list to hold existing recipes
-    cur.execute("select recipe_name, source_file from recipes")
-    existing_recipes = set(cur.fetchall())
-
+def extract_recipes_from_fps(fps):
     # list to hold extracted results
     extracted_recipes = []
     for fp in fps:
         extracted_recipes.extend(extract_data(fp))
 
-    # list to hold new recipes
-    new_recipes = [
-        recipe_dict for recipe_dict in extracted_recipes if
-        (recipe_dict['title'], recipe_dict['source_file'])
-        not in existing_recipes
-    ]
-
-    for recipe_dict in new_recipes:
-        # message
-        print(f"Inserting {recipe_dict['title']}")
-
-        # add some missing keys
-        for k in ['prep-time', 'cook-time', 'servings', 'source-url']:
-            if not k in recipe_dict:
-                recipe_dict[k] = None
-
-        # only create
-        if 'title' in recipe_dict.keys():
-            cur.execute(
-                "INSERT INTO recipes (recipe_name, prep_time, cook_time, servings, source_url, source_file) VALUES (?,?,?,?,?,?)",
-                (recipe_dict['title'], recipe_dict['prep-time'], recipe_dict['cook-time'],
-                 recipe_dict['servings'], recipe_dict['source-url'], recipe_dict['source_file'])
-            )
-
-            # get the assigned id - take max just in case
-            cur.execute(
-                "select max(recipe_id) from recipes where recipe_name = ? and source_file = ?",
-                (recipe_dict['title'], recipe_dict['source_file'])
-            )
-            recipe_id = cur.fetchone()[0]
-
-        else:
-            print(recipe_dict)
-            break
-
-        if 'ingredients' in recipe_dict.keys():
-            ingredient_list = recipe_dict['ingredients']
-            n_ingredients = len(ingredient_list)
-            records = [(recipe_id, recipe_step, i, ingredient) for i, (recipe_step, ingredient) in enumerate(ingredient_list)]
-
-            cur.executemany(
-                "INSERT INTO ingredients (recipe_id, recipe_step, ingredient_number, ingredient) VALUES (?,?,?,?)",
-                records
-            )
-
-        if 'directions' in recipe_dict.keys():
-            direction_list = recipe_dict['directions']
-            n_directions = len(direction_list)
-            records = [(recipe_id, i, direction) for i, direction in enumerate(direction_list)]
-
-            cur.executemany(
-                "INSERT INTO directions (recipe_id, direction_number, direction) VALUES (?,?,?)",
-                records
-            )
-
-    con.commit()
-
-
-def get_tables(con):
-    cur = con.cursor()
-    cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = cur.fetchall()
-    tables = [t[0] for t in tables]
-
-    return tables
-
-
-def get_columns(con, table_name):
-    cur = con.cursor()
-    cur.execute(f"pragma table_info('{table_name}');")
-    column_metas = cur.fetchall()
-    columns = [cm[1] for cm in column_metas]
-
-    return columns
-
-
-def get_tables_with_column(con, column_name):
-    tables = get_tables(con)
-    tables = [table for table in tables if column_name in get_columns(con, table)]
-
-    return tables
-
-
-def remove_recipe(con, recipe_id, force_remove=False):
-    cur = con.cursor()
-    tables_to_check = get_tables_with_column(con, 'recipe_id')
-    core_tables = ['recipes', 'directions', 'ingredients']
-    other_tables = [t for t in tables_to_check if not t in core_tables]
-
-    remove_okay = True
-    if not force_remove:
-        for table in other_tables:
-            cur.execute(f"select * from {table} where recipe_id = ?", (recipe_id,))
-            rslt = cur.fetchone()
-
-            if rslt is not None:
-                remove_okay = False
-                break
-
-    if not remove_okay:
-        print(f"Note: Not deleting recipe_id: {recipe_id} since it was" + \
-               "used elsewhere, and force_remove = False")
-    else:
-        print(f"Removing {recipe_id} from core tables")
-        for table in core_tables:
-            cur.execute(f"delete from {table} where recipe_id = ?", (recipe_id,))
-        con.commit()
+    return extracted_recipes
 
 
 if __name__ == "__main__":
+    import sqlite3
     from app import app
+    import dbtools as dbt
+
     root_dir = Path(app.root_path)/".."
     data_dir_in  = root_dir/"content"
-    data_dir_out = root_dir/"src"
+    data_dir_out = root_dir/"data"
 
     # list to hold extracted results
-    rslts = []
     fps = data_dir_in.glob(f"*.org")
+    extracted_recipes = extract_recipes_from_fps(fps)
+
+    # load to db - ensure db exists!
     con = sqlite3.connect(data_dir_out/f'recipe.db')
-    create_db(con)
-    update_db(con, fps)
+    dbt.create_db(con)
+    dbt.update_db(con, extracted_recipes)
     con.close()
