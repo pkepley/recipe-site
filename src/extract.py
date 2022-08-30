@@ -90,13 +90,9 @@ def extract_data(fp):
     source_file = fp.name
 
     with open(fp, "r") as f:
-        content_rows = [
-            r.strip().replace(u'\xa0', u' ')
-            for r in list(f.readlines())
-        ]
-        content_rows = [
-            c for c in content_rows if len(c) > 0
-        ]
+        content_rows = [r.strip().replace(u'\xa0', u' ') \
+                        for r in list(f.readlines())]
+        content_rows = [c for c in content_rows if len(c) > 0]
 
     if not content_rows:
         return content_dict
@@ -132,21 +128,18 @@ def extract_data(fp):
     return all_recipes
 
 
-def create_db_destructive(data_dir_out, dbname='recipe'):
-    con = sqlite3.connect(f'{data_dir_out}/{dbname}.db')
+def create_db_destructive(con):
     cur = con.cursor()
 
     cur.execute("DROP TABLE IF EXISTS recipes")
     cur.execute("DROP TABLE IF EXISTS ingredients")
     cur.execute("DROP TABLE IF EXISTS directions")
-    create_db(data_dir_out, dbname=dbname)
+    create_db(con)
 
     con.commit()
-    con.close()
 
 
-def create_db(data_dir_out, dbname='recipe'):
-    con = sqlite3.connect(f'{data_dir_out}/{dbname}.db')
+def create_db(con):
     cur = con.cursor()
 
     cur.execute("""
@@ -179,9 +172,8 @@ def create_db(data_dir_out, dbname='recipe'):
     """)
 
 
-def update_db(data_dir_out, fps, dbname='recipe'):
+def update_db(con, fps):
     # TODO: note db must exist first!
-    con = sqlite3.connect(f'{data_dir_out}/{dbname}.db')
     cur = con.cursor()
 
     # get number of existing recipes
@@ -255,27 +247,69 @@ def update_db(data_dir_out, fps, dbname='recipe'):
             )
 
     con.commit()
-    con.close()
 
 
-def _remove_recipe_(data_dir_out, recipe_id, dbname='recipe'):
-    con = sqlite3.connect(f'{data_dir_out}/{dbname}.db')
+def get_tables(con):
     cur = con.cursor()
-    cur.execute("delete from recipes where recipe_id = ?", (recipe_id,))
-    cur.execute("delete from directions  where recipe_id = ?", (recipe_id,))
-    cur.execute("delete from ingredients where recipe_id = ?", (recipe_id,))
-    con.commit()
-    con.close()
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    tables = cur.fetchall()
+    tables = [t[0] for t in tables]
+
+    return tables
+
+
+def get_columns(con, table_name):
+    cur = con.cursor()
+    cur.execute(f"pragma table_info('{table_name}');")
+    column_metas = cur.fetchall()
+    columns = [cm[1] for cm in column_metas]
+
+    return columns
+
+
+def get_tables_with_column(con, column_name):
+    tables = get_tables(con)
+    tables = [table for table in tables if column_name in get_columns(con, table)]
+
+    return tables
+
+
+def remove_recipe(con, recipe_id, force_remove=False):
+    cur = con.cursor()
+    tables_to_check = get_tables_with_column(con, 'recipe_id')
+    core_tables = ['recipes', 'directions', 'ingredients']
+    other_tables = [t for t in tables_to_check if not t in core_tables]
+
+    remove_okay = True
+    if not force_remove:
+        for table in other_tables:
+            cur.execute(f"select * from {table} where recipe_id = ?", (recipe_id,))
+            rslt = cur.fetchone()
+
+            if rslt is not None:
+                remove_okay = False
+                break
+
+    if not remove_okay:
+        print(f"Note: Not deleting recipe_id: {recipe_id} since it was" + \
+               "used elsewhere, and force_remove = False")
+    else:
+        print(f"Removing {recipe_id} from core tables")
+        for table in core_tables:
+            cur.execute(f"delete from {table} where recipe_id = ?", (recipe_id,))
+        con.commit()
 
 
 if __name__ == "__main__":
     from app import app
-    root_dir = app.root_path + "/../"
-    data_dir_in = root_dir + "/content/"
-    data_dir_out = root_dir + "/data/"
+    root_dir = Path(app.root_path)/".."
+    data_dir_in  = root_dir/"content"
+    data_dir_out = root_dir/"src"
 
     # list to hold extracted results
     rslts = []
-    fps = Path(data_dir_in).glob(f"*.org")
-    create_db(data_dir_out, dbname='recipe')
-    update_db(data_dir_out, fps, dbname='recipe')
+    fps = data_dir_in.glob(f"*.org")
+    con = sqlite3.connect(data_dir_out/f'recipe.db')
+    create_db(con)
+    update_db(con, fps)
+    con.close()
