@@ -1,12 +1,12 @@
+import os
+import re
+from datetime import datetime, timedelta
 from flask import (
     Flask, render_template,
     request, g, jsonify, url_for,
     send_from_directory
 )
 import sqlite3
-from datetime import datetime, timedelta
-import os
-import re
 
 
 # construct app and point app to useful folders
@@ -16,9 +16,10 @@ app.static_folder = app.root_path + "/../static/"
 data_dir = app.root_path + "/../data/"
 print(f"Using data_dir = {data_dir}")
 
+
 @app.route('/favicon.ico')
 def favicon():
-    return send_from_directory(os.path.join(app.root_path, 'static'),
+    return send_from_directory(os.path.join(app.root_path, '/../static'),
                                'favicon.png', mimetype='image/png')
 
 def get_db():
@@ -64,7 +65,7 @@ def recipe_site():
     ## today's recipe
     db = get_db()
     cur = db.cursor()
-    todays_date=datetime.now().strftime("%Y-%m-%d")
+    todays_date = datetime.now().strftime("%Y-%m-%d")
 
     ## Get the Ingredients
     query = cur.execute('''
@@ -198,7 +199,7 @@ def render_grocery_print():
     if recipe_quantities is not None:
         recipe_quantities = re.findall(r'\d+', recipe_quantities)
     else:
-        recipe_quantities = ['1' for idx in recipe_ids]
+        recipe_quantities = ['1' for _ in recipe_ids]
     recipe_quantities = [int(n) for n in recipe_quantities]
 
     # convert to map
@@ -245,7 +246,7 @@ def render_recipe_scheduler():
 
     db = get_db()
     c  = db.cursor()
-    query = c.execute('''
+    c.execute('''
         SELECT
            rs.recipe_id
           ,rs.day_of_week
