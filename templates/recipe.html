@@ -7,6 +7,13 @@
   <body onload="onLoadPage()">
     <div class="container">
     <h1> {{recipe_name}} </h1>
+
+    {% if source_url != "" %}
+    <div id="source_url">
+      Access the original recipe: <a href="{{source_url}}">click here!</a>
+    </div>
+    {% endif %}
+
     <h2> Ingredients </h2>
     <div id="ingredient_div">
       <ol>
@@ -24,6 +31,7 @@
 	{% endfor %}
       </ol>
     </div>
+
 
     <div>
       <button class="btn btn-primary" onclick="window.location.href='/recipe-site/'"> <i class="bi bi-house-fill"></i> Go Home</button>
