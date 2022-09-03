@@ -20,19 +20,27 @@
   <body onload="onLoadPage()">
     <div class="container">
       <div class="row">
-        <h1> Recipe Scheduler <span id="week-start">{{week_start}}</span></h1>
+        <h1> Recipe Scheduler </h1>
       </div>
-      <br />
-      <!-- <div class="row"> -->
-      <!--   <h2> Recipes </h2> -->
-      <!-- </div> -->
-      <!--     <div class="row"> -->
-      <!-- <\!-- <template> -\-> -->
-      <!-- <\!--   <b-calendar block locale="en-US"></b-calendar> -\-> -->
-      <!-- <\!-- </template> -\-> -->
-      <!--     </div> -->
       <div id="recipe-div" class="row">
-        <table id="recipe-table" width="100%">
+        <table style="width:100%; margin-top:1em; margin-botton:1em;">
+          <tr>
+            <th style="width:33%; text-align:left;">
+              <button style="all:unset; color:#183fcc; font-size:calc(14px + 0.125vw); cursor:pointer;"
+                      onclick="changeWeek(-1)"><i class="bi bi-arrow-left-square"></i> Last Week
+              </button>
+            </th>
+            <th style="width:33%; text-align:center; ">
+              <span id="week-start" style="font-size:calc(10px + 1.5vw);">{{week_start}}</span>
+            </th>
+            <th style="width:33%; text-align:right;  ">
+              <button style="all:unset; color:#183fcc; font-size:calc(14px + 0.125vw); cursor:pointer;"
+                      onclick="changeWeek(+1)">Next Week <i class="bi bi-arrow-right-square"></i>
+              </button>
+            </th>
+          </tr>
+        </table>
+        <table id="recipe-table" style="width:100%; margin-top:1em; margin-botton:1em;">
           <col style="width:25%">
           <col style="width:2.5%">
           <col style="width:2.5%">
@@ -40,7 +48,7 @@
           <col style="width:10%">
           <thead>
           <tr>
-            <th><h3>Week Day</h3></th>
+            <th><h3>Day</h3></th>
             <th colspan="2"></th>
             <th><h3>Recipe</h3></th>
             <th><h3>Quantity</h3></th>
@@ -76,12 +84,23 @@
         </table>
       </div>
       <br />
-      <div>
-          <button class="btn btn-primary" onclick="setGroceryList()"><i class="bi bi-save"></i> Save Recipe Schedule</button>
-          <button class="btn btn-primary" onclick="getGroceryListPrint()"> <i class="bi bi-list-ol"></i> Get Grocery List</button>
-          <button class="btn btn-primary" onclick="changeWeek(-1)"> <i class="bi bi-pen"></i> Edit Last Week</button>
-          <button class="btn btn-primary" onclick="changeWeek(+1)"> <i class="bi bi-pen"></i> Edit Next Week</button>
-          <button class="btn btn-primary" onclick="window.location.href='/recipe-site/'"> <i class="bi bi-house-fill"></i> Go Home</button>
+      <div style="width:100%">
+        <table style="width:100%; margin-top:1em; margin-botton:1em;">
+          <tr>
+            <th class="text-center" style="width:33%; color:#183fcc; font-size:calc(12px + 0.25vw); cursor:pointer;">
+              <button style="all:unset; color:#183fcc; font-size:calc(14px + 0.125vw); cursor:pointer;"
+                      onclick="setGroceryList()"><i class="bi bi-save"></i> Save Schedule</button>
+            </th>
+            <th style="width:33%;" class="text-center">
+              <button style="all:unset; color:#183fcc; font-size:calc(14px + 0.125vw); cursor:pointer;"
+                      onclick="getGroceryListPrint()"> <i class="bi bi-list-ol"></i> Grocery List</button>
+            </th>
+            <th style="width:33%;" class="text-center">
+              <button style="all:unset; color:#183fcc; font-size:calc(14px + 0.125vw); cursor:pointer;"
+                      onclick="window.location.href='/recipe-site/'"> <i class="bi bi-house-fill"></i> Go Home</button>
+            </th>
+          </tr>
+        </table>
       </div>
     </div>
   </body>
