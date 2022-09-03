@@ -4,6 +4,7 @@
     <title>Recipe Scheduler</title>
     {% include 'common-loads.html' %}
     <script src="/recipe-site/static/recipe-scheduler.js"></script>
+    <link rel="stylesheet" href="/recipe-site/static/recipe-scheduler.css"/>
     <script>
       var recipe_list = {
 {% for recipe_name in recipe_name %}
@@ -13,7 +14,7 @@
       var scheduled_recipe_ids = {{scheduled_recipe_ids}};
       var scheduled_day_of_week = {{scheduled_day_of_week}};
       var scheduled_quantities = {{scheduled_quantities}};
-      var scheduled_recipe_names = scheduled_recipe_ids.map(i =>  recipe_list[i]);
+      var scheduled_recipe_names = scheduled_recipe_ids.map(i => recipe_list[i]);
       console.log(scheduled_recipe_names);
     </script>
   </head>
@@ -26,16 +27,16 @@
         <table style="width:100%; margin-top:1em; margin-botton:1em;">
           <tr>
             <th style="width:33%; text-align:left;">
-              <button style="all:unset; color:#183fcc; font-size:calc(14px + 0.125vw); cursor:pointer;"
-                      onclick="changeWeek(-1)"><i class="bi bi-arrow-left-square"></i> Last Week
+              <button class = "button upper" onclick="changeWeek(-1)">
+                <span><i class="bi bi-arrow-left-square"></i> Last Week</span>
               </button>
             </th>
             <th style="width:33%; text-align:center; ">
               <span id="week-start" style="font-size:calc(10px + 1.5vw);">{{week_start}}</span>
             </th>
             <th style="width:33%; text-align:right;  ">
-              <button style="all:unset; color:#183fcc; font-size:calc(14px + 0.125vw); cursor:pointer;"
-                      onclick="changeWeek(+1)">Next Week <i class="bi bi-arrow-right-square"></i>
+              <button class="button upper" onclick="changeWeek(+1)">
+                <span>Next Week <i class="bi bi-arrow-right-square"></i></span>
               </button>
             </th>
           </tr>
@@ -60,16 +61,16 @@
             <td id="date-{{day}}">{{day}}</td>
             <td>
               {% if day != "sun" %}
-              <a onclick="moveUp('{{day}}')">
+              <button class="button middle" onclick="moveUp('{{day}}')">
                 <i class="bi bi-arrow-up" style="cursor: pointer"></i>
-              </a>
+              </button>
               {% endif %}
             </td>
             <td>
               {% if day != "sat" %}
-              <a onclick="moveDown('{{day}}')">
+              <button class="button middle" onclick="moveDown('{{day}}')">
                 <i class="bi bi-arrow-down" style="cursor: pointer"></i>
-              </a>
+              </button>
               {% endif %}
             </td>
             <td id="select-{{day}}">
@@ -87,17 +88,20 @@
       <div style="width:100%">
         <table style="width:100%; margin-top:1em; margin-botton:1em;">
           <tr>
-            <th class="text-center" style="width:33%; color:#183fcc; font-size:calc(12px + 0.25vw); cursor:pointer;">
-              <button style="all:unset; color:#183fcc; font-size:calc(14px + 0.125vw); cursor:pointer;"
-                      onclick="setGroceryList()"><i class="bi bi-save"></i> Save Schedule</button>
+            <th class="text-center">
+              <button class="button lower" onclick="setGroceryList()">
+                <span><i class="bi bi-save"></i> Save Schedule</span>
+              </button>
             </th>
             <th style="width:33%;" class="text-center">
-              <button style="all:unset; color:#183fcc; font-size:calc(14px + 0.125vw); cursor:pointer;"
-                      onclick="getGroceryListPrint()"> <i class="bi bi-list-ol"></i> Grocery List</button>
+              <button class="button lower" onclick="getGroceryListPrint()">
+                <span><i class="bi bi-list-ol"></i> Grocery List</span>
+              </button>
             </th>
             <th style="width:33%;" class="text-center">
-              <button style="all:unset; color:#183fcc; font-size:calc(14px + 0.125vw); cursor:pointer;"
-                      onclick="window.location.href='/recipe-site/'"> <i class="bi bi-house-fill"></i> Go Home</button>
+              <button class="button lower" onclick="window.location.href='/recipe-site/'">
+                <span><i class="bi bi-house-fill"></i> Return Home</span>
+              </button>
             </th>
           </tr>
         </table>

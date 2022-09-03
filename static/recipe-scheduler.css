@@ -1,0 +1,36 @@
+button.upper {
+    background-color:transparent;
+    border:none;
+    color:#183fcc;
+    padding:calc(5px + 0.125vw);
+    font-size:calc(14px + 0.125vw);
+    cursor:pointer;
+}
+button.upper:hover {
+    color:white;
+    background-color:#183fcc;
+}
+
+button.middle {
+    all:unset;
+    color:#183fcc;
+    cursor:pointer;
+}
+button.middle:hover {
+    color:white;
+    background-color:#183fcc;
+}
+
+button.lower {
+    width:66%;
+    background-color:transparent;
+    border:none;
+    color:#183fcc;
+    padding:calc(5px + 0.125vw);
+    font-size:calc(14px + 0.125vw);
+    cursor:pointer;
+}
+button.lower:hover {
+    color:white;
+    background-color:#183fcc;
+}
