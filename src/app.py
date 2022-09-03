@@ -17,15 +17,16 @@ data_dir = app.root_path + "/../data/"
 print(f"Using data_dir = {data_dir}")
 
 
-@app.route('/favicon.ico')
+@app.route('/recipe-icon/static/favicon.ico')
 def favicon():
-    return send_from_directory(os.path.join(app.root_path, '/../static'),
-                               'favicon.png', mimetype='image/png')
+   return send_from_directory(app.static_folder, 'favicon.ico')
 
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
         db = g._database = sqlite3.connect(f"{data_dir}/recipe.db")
+        # use a Row factory for named access
+        db.row_factory = sqlite3.Row
     return db
 
 @app.teardown_appcontext
@@ -44,15 +45,12 @@ def populate_recipe_list():
     FROM recipes;
     ''')
 
+    # get data
     rows = query.fetchall()
 
     # convert values
     columns = [desc[0] for desc in c.description]
-    column_vals = dict([(c, []) for c in columns])
-
-    for row in rows:
-        for i, c in enumerate(columns):
-            column_vals[c].append(row[i])
+    column_vals = dict([(c, [row[c] for row in rows]) for c in columns])
 
     return column_vals
 
