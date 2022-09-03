@@ -88,21 +88,48 @@ function getGroceryListPrint() {
   document.location.href = newUrl;
 }
 
-function setGroceryList() {
-  var recipeIds    = getRecipeIds();
-  var recipeCounts = getRecipeCounts();
-  var weekStart    = getWeekStart();
+function filterGroceryList(weekDaysScheduled, recipeIds, recipeCounts) {
+  let idx_keep = new Array();
+
+  for (let i = 0; i < weekDaysScheduled.length; i++) {
+    if (recipeIds[i] || (recipeCounts[i] != 0)) {
+      idx_keep.push(i);
+    }
+  }
+
+  return {
+    "weekdays-scheduled": idx_keep.map(i => weekDaysScheduled[i]),
+    "recipe-ids": idx_keep.map(i => recipeIds[i]),
+    "recipe-counts": idx_keep.map(i => recipeCounts[i])
+  }
+}
+
+function setGroceryList(weekStart, weekDaysScheduled, recipeIds, recipeCounts) {
+  var gl = filterGroceryList(weekDaysScheduled, recipeIds, recipeCounts);
 
   var newUrl = "/recipe-site/recipe-scheduler/create-schedule?";
   newUrl = newUrl + "week-start=" + weekStart;
-  newUrl = newUrl + "&recipe-ids=" + recipeIds.join(",");
-  newUrl = newUrl + "&recipe-counts=" + recipeCounts.join(",");
-
+  newUrl = newUrl + "&weekdays-scheduled=" + gl["weekdays-scheduled"].join(",");
+  newUrl = newUrl + "&recipe-ids=" + gl["recipe-ids"].join(",");
+  newUrl = newUrl + "&recipe-counts=" + gl["recipe-counts"].join(",");
   console.log(newUrl);
-  //document.location.href = newUrl
-  var oReq = new XMLHttpRequest();
-  oReq.open("POST", newUrl);
-  oReq.send();
+
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", newUrl, false);
+  xhr.send();
+
+  console.log(xhr)
+
+  return xhr;
+}
+
+function getGroceryList() {
+  var weekStart    = getWeekStart();
+  var newUrl = "/recipe-site/recipes-scheduled?week-start=" + weekStart;
+
+  return $.getJSON(newUrl).then(function(data) {
+    return data;
+  });
 }
 
 function setRecipe(i, recipe_id, recipe_amount) {
@@ -115,7 +142,6 @@ function setRecipe(i, recipe_id, recipe_amount) {
   // set amount
   var cntId = `cnt-${weekDays[i]}`;
   document.getElementById(cntId).value = recipe_amount;
-
 }
 
 function getRecipe(i) {
@@ -167,7 +193,96 @@ function changeWeek(n_weeks_change) {
   weekStart = weekStart.toISOString().slice(0, 10);
 
   window.location.href = `/recipe-site/recipe-scheduler/?week-start=${weekStart}`;
-  //"window.location.href='/recipe-site/'"
+}
+
+
+function workSaved() {
+  // current state
+  var recipeIds    = getRecipeIds();
+  var recipeCounts = getRecipeCounts();
+  var weekStart    = getWeekStart();
+  console.log(recipeIds)
+
+  var gl_in = filterGroceryList(
+    [0,1,2,3,4,5,6],
+    recipeIds,
+    recipeCounts
+  )
+
+  return getGroceryList().then(function(gl_out){
+    rslt_okay = true;
+    rslt_okay = rslt_okay & gl_in['weekdays-scheduled'].length == gl_out['day_of_week'].length
+    rslt_okay = rslt_okay & gl_in['recipe-counts'].length == gl_out['quantity'].length
+    rslt_okay = rslt_okay & gl_in['recipe-ids'].length == gl_out['recipe_id'].length
+    rslt_okay = rslt_okay & gl_in["weekdays-scheduled"].every((v,i) => +gl_out["day_of_week"][i] == +v)
+    rslt_okay = rslt_okay & gl_in["recipe-counts"].every((v,i) => +gl_out["quantity"][i] == +v)
+    rslt_okay = rslt_okay & gl_in["recipe-ids"].every((v,i) => +gl_out["recipe_id"][i] == +v)
+
+    return rslt_okay
+  });
+}
+
+function saveWork() {
+  // current state
+  var recipeIds    = getRecipeIds();
+  var recipeCounts = getRecipeCounts();
+  var weekStart    = getWeekStart();
+  console.log(recipeIds)
+
+  var gl_in = filterGroceryList(
+    [0,1,2,3,4,5,6],
+    recipeIds,
+    recipeCounts
+  )
+
+  setGroceryList(
+    weekStart,
+    gl_in["weekdays-scheduled"],
+    gl_in["recipe-ids"],
+    gl_in["recipe-counts"]
+  )
+
+  workSaved().then(function(rslt_okay) {
+    if (rslt_okay) {
+      displaySnackBar("Save Succeeded", "success");
+    } else {
+      displaySnackBar("Save Failed", "failure");
+    }
+  })
+}
+
+function displaySnackBar(msgString, showSubClass="") {
+  var className = "show";
+  if (showSubClass) {
+    className = className + showSubClass;
+  }
+  var snackbar = document.getElementById("snackbar");
+  snackbar.className = className;
+  snackbar.textContent = msgString;
+  setTimeout(function(){ snackbar.className = snackbar.className.replace(className, ""); }, 2000);
+}
+
+function saveThenDo(f) {
+  saveWork();
+  f();
+}
+
+function modalVerify(f){
+  workSaved().then(function(work_saved) {
+    if (work_saved) {
+      f();
+    } else{
+      $('#exampleModal').modal('show');
+      // TODO: we still aren't verifying that the save worked. We *should*
+      // really check this!!!
+      document.getElementById("modal-button-save").onclick = () => saveThenDo(f);
+      document.getElementById("modal-button-nosave").onclick = f;
+    }
+  });
+}
+
+function goHome(){
+  window.location.href='/recipe-site/';
 }
 
 function onLoadPage() {

@@ -27,7 +27,7 @@
         <table style="width:100%; margin-top:1em; margin-botton:1em;">
           <tr>
             <th style="width:33%; text-align:left;">
-              <button class = "button upper" onclick="changeWeek(-1)">
+              <button class = "button upper" onclick="modalVerify(() => changeWeek(-1))">
                 <span><i class="bi bi-arrow-left-square"></i> Last Week</span>
               </button>
             </th>
@@ -35,7 +35,7 @@
               <span id="week-start" style="font-size:calc(10px + 1.5vw);">{{week_start}}</span>
             </th>
             <th style="width:33%; text-align:right;  ">
-              <button class="button upper" onclick="changeWeek(+1)">
+              <button class="button upper" onclick="modalVerify(() => changeWeek(+1))">
                 <span>Next Week <i class="bi bi-arrow-right-square"></i></span>
               </button>
             </th>
@@ -89,17 +89,17 @@
         <table style="width:100%; margin-top:1em; margin-botton:1em;">
           <tr>
             <th class="text-center">
-              <button class="button lower" onclick="setGroceryList()">
+              <button class="button lower" onclick="saveWork()">
                 <span><i class="bi bi-save"></i> Save Schedule</span>
               </button>
             </th>
             <th style="width:33%;" class="text-center">
-              <button class="button lower" onclick="getGroceryListPrint()">
+              <button class="button lower" onclick="modalVerify(getGroceryListPrint)">
                 <span><i class="bi bi-list-ol"></i> Grocery List</span>
               </button>
             </th>
             <th style="width:33%;" class="text-center">
-              <button class="button lower" onclick="window.location.href='/recipe-site/'">
+              <button class="button lower" onclick="modalVerify(goHome)">
                 <span><i class="bi bi-house-fill"></i> Return Home</span>
               </button>
             </th>
@@ -107,5 +107,33 @@
         </table>
       </div>
     </div>
+  <!-- Snack Bar -->
+    <div>
+      <div id="snackbar"></div>
+    </div>
+  <!-- Modal -->
+  <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">Unsaved Work</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          The current recipe schedule has not been recorded.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button id="modal-button-nosave" type="button" class="btn btn-danger">
+            Proceed Without Saving
+          </button>
+          <button id="modal-button-save" type="button" class="btn btn-primary">
+            Save changes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
   </body>
+
 </html>
