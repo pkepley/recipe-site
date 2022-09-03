@@ -37,8 +37,8 @@ def close_connection(exception):
 
 def populate_recipe_list():
     db = get_db()
-    c  = db.cursor()
-    query = c.execute('''
+    cur = db.cursor()
+    query = cur.execute('''
     SELECT
        recipe_id
       ,recipe_name
@@ -49,7 +49,7 @@ def populate_recipe_list():
     rows = query.fetchall()
 
     # convert values
-    columns = [desc[0] for desc in c.description]
+    columns = [desc[0] for desc in cur.description]
     column_vals = dict([(c, [row[c] for row in rows]) for c in columns])
 
     return column_vals
@@ -84,6 +84,7 @@ def recipe_site():
         recipe_id        = recipe_data['recipe_id'],
         recipe_name      = recipe_data['recipe_name']
     )
+
 
 def get_recipe(recipe_id):
     db = get_db()
@@ -123,12 +124,7 @@ def get_recipe(recipe_id):
 
     # convert values
     columns = [desc[0] for desc in cur.description]
-    ingredient_rslt = dict([(c, []) for c in columns])
-
-    for row in rows:
-        for i, column in enumerate(columns):
-            ingredient_rslt[column].append(row[i])
-
+    ingredient_rslt = dict([(c, [row[c] for row in rows]) for c in columns])
 
     ## Get the Directions
     query = cur.execute('''
@@ -145,11 +141,7 @@ def get_recipe(recipe_id):
 
     # convert values
     columns = [desc[0] for desc in cur.description]
-    direction_rslt = dict([(column, []) for column in columns])
-
-    for row in rows:
-        for i, column in enumerate(columns):
-            direction_rslt[column].append(row[i])
+    direction_rslt = dict([(c, [row[c] for row in rows]) for c in columns])
 
     rslt = dict(
         recipe_name = recipe_name,
@@ -159,6 +151,7 @@ def get_recipe(recipe_id):
     )
 
     return rslt
+
 
 @app.route('/recipe-site/recipe/<recipe_id>')
 def render_recipe(recipe_id):
@@ -172,6 +165,7 @@ def render_recipe(recipe_id):
         source_url=recipe_data['source_url']
     )
 
+
 @app.route('/recipe-site/grocery-list/')
 def render_grocery():
     recipe_data = populate_recipe_list()
@@ -181,6 +175,7 @@ def render_grocery():
         recipe_id=recipe_data['recipe_id'],
         recipe_name=recipe_data['recipe_name']
     )
+
 
 @app.route('/recipe-site/grocery-list-print/', methods=['GET'])
 def render_grocery_print():
@@ -205,8 +200,8 @@ def render_grocery_print():
 
     # fetch the recipes
     db = get_db()
-    c  = db.cursor()
-    query = c.execute(
+    cur = db.cursor()
+    query = cur.execute(
         f"""
             SELECT
               recipe_id,
@@ -219,16 +214,11 @@ def render_grocery_print():
     rows = query.fetchall()
 
     # convert values
-    columns = [desc[0] for desc in c.description]
-    column_vals = dict([(c, []) for c in columns])
-    for row in rows:
-        for i, c in enumerate(columns):
-            column_vals[c].append(row[i])
+    columns = [desc[0] for desc in cur.description]
+    column_vals = dict([(c, [row[c] for row in rows]) for c in columns])
 
     # multiplier for each ingredient?
-    ingredient_quantities = [
-        recipe_amt_map[idx] for idx in column_vals['recipe_id']
-    ]
+    ingredient_quantities = [recipe_amt_map[idx] for idx in column_vals['recipe_id']]
 
     return render_template(
         'grocery-list-print.html',
@@ -237,14 +227,15 @@ def render_grocery_print():
         ingredient_zip = zip(column_vals['ingredient'], ingredient_quantities)
     )
 
+
 @app.route('/recipe-site/recipe-scheduler/', methods=['GET'])
 def render_recipe_scheduler():
     week_start = request.args.get('week-start')
     recipe_data = populate_recipe_list()
 
     db = get_db()
-    c  = db.cursor()
-    c.execute('''
+    cur = db.cursor()
+    cur.execute('''
         SELECT
            rs.recipe_id
           ,rs.day_of_week
@@ -254,15 +245,11 @@ def render_recipe_scheduler():
         ''',
         (week_start,)
     )
-    rows = c.fetchall()
+    rows = cur.fetchall()
 
     # convert values
-    columns = [desc[0] for desc in c.description]
-    column_vals = dict([(c, []) for c in columns])
-
-    for row in rows:
-        for i, c in enumerate(columns):
-            column_vals[c].append(row[i])
+    columns = [desc[0] for desc in cur.description]
+    column_vals = dict([(c, [row[c] for row in rows]) for c in columns])
 
     print(column_vals)
 
@@ -277,25 +264,61 @@ def render_recipe_scheduler():
     )
 
 
+@app.route('/recipe-site/recipes-scheduled', methods=['GET'])
+def recipes_scheduled():
+    week_start = request.args.get('week-start')
+
+    db = get_db()
+    cur = db.cursor()
+    cur.execute('''
+        SELECT
+           rs.recipe_id
+          ,rs.day_of_week
+          ,rs.quantity
+        FROM recipe_schedule as rs
+        WHERE week_start = ?
+        ''',
+        (week_start,)
+    )
+    rows = cur.fetchall()
+
+    # convert values
+    columns = [desc[0] for desc in cur.description]
+    column_vals = dict([(c, [row[c] for row in rows]) for c in columns])
+
+    return column_vals
+
+
 @app.route('/recipe-site/recipe-scheduler/create-schedule', methods=['POST'])
 def schedule_recipes():
     add_time = str(datetime.now())[0:23]
     week_start = request.args.get('week-start')
+    days_of_week = request.args.get('weekdays-scheduled')
     recipe_ids = request.args.get('recipe-ids')
     recipe_counts = request.args.get('recipe-counts')
+
+    print(week_start)
+    print(days_of_week)
+    print(recipe_ids)
+    print(recipe_counts)
 
     try:
         recipe_ids = recipe_ids.split(",")
         recipe_ids = [int(rid) if rid.strip() else -1 for rid in recipe_ids]
     except:
-        print("FAILURE")
-        return "FAILED"
+        return "schedule-failure"
 
     try:
         recipe_counts = recipe_counts.split(",")
         recipe_counts = [int(amt) if amt.strip() else 0 for amt in recipe_counts]
     except:
-        return "FAILED"
+        return "schedule-failure"
+
+    try:
+        days_of_week = days_of_week.split(",")
+        days_of_week = [int(weekday) if weekday.strip() else -1 for weekday in days_of_week]
+    except:
+        return "schedule-failure"
 
     # delete records
     db = get_db()
@@ -306,20 +329,21 @@ def schedule_recipes():
         ''',
         (week_start,)
     )
-    db.commit()
 
+    print("HERE")
     # insert records
-    keep_days = [i for i in range(7) if recipe_ids[i] >= 0 and recipe_counts[i] != 0]
+    #keep_days = [i for i in range(7) if recipe_ids[i] >= 0 and recipe_counts[i] != 0]
     scheduled_days = [
         (datetime.strptime(week_start, "%Y-%m-%d") + timedelta(days = i)).strftime("%Y-%m-%d")
-        for i in keep_days
+        for i in days_of_week #keep_days
     ]
-    recipe_ids = [recipe_ids[i] for i in keep_days]
-    recipe_counts = [recipe_counts[i] for i in keep_days]
+    # recipe_ids = [recipe_ids[i] for i in keep_days]
+    # recipe_counts = [recipe_counts[i] for i in keep_days]
     records = [
         (week_start, scheduled_day, day_of_week, recipe_id, quantity, add_time) for
         day_of_week, scheduled_day, recipe_id, quantity
-        in zip(keep_days, scheduled_days, recipe_ids, recipe_counts)
+        in zip(days_of_week, scheduled_days, recipe_ids, recipe_counts)
+        if quantity > 0
     ]
     print(records)
     query = c.executemany('''
@@ -338,7 +362,7 @@ def schedule_recipes():
     )
     db.commit()
 
-    return "success"
+    return "schedule-success"
 
 @app.route('/recipe-site/static/<path:path>')
 def send_js(path):
