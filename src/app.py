@@ -182,17 +182,25 @@ def render_grocery_print():
     # which recipes to display?
     recipe_ids = request.args.get('recipe_ids')
     if recipe_ids is not None:
-        recipe_ids = re.findall(r'\d+', recipe_ids)
+        recipe_ids = [rid.strip() for rid in recipe_ids.split(",")]
     else:
         recipe_ids = []
-    recipe_ids = [int(idx) for idx in recipe_ids]
 
     # how much to display?
     recipe_quantities = request.args.get('recipe_quantities')
     if recipe_quantities is not None:
-        recipe_quantities = re.findall(r'\d+', recipe_quantities)
+        recipe_quantities = [rq.strip() for rq in recipe_quantities.split(",")]
     else:
         recipe_quantities = ['1' for _ in recipe_ids]
+
+    # filter the lists
+    recipe_ids, recipe_quantities = zip(
+       *((rid, amt) for rid, amt in zip(recipe_ids, recipe_quantities)
+         if rid != "" and amt != "" and int(amt) > 0)
+    )
+
+    # conver to ints
+    recipe_ids = [int(idx) for idx in recipe_ids]
     recipe_quantities = [int(n) for n in recipe_quantities]
 
     # convert to map
