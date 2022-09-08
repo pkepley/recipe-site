@@ -3,8 +3,7 @@ import re
 from datetime import datetime, timedelta
 from flask import (
     Flask, render_template,
-    request, g, jsonify, url_for,
-    send_from_directory
+    request, g, send_from_directory
 )
 import sqlite3
 
@@ -17,23 +16,32 @@ data_dir = app.root_path + "/../data/"
 print(f"Using data_dir = {data_dir}")
 
 
+def dict_factory(cursor, row):
+    col_names = [col[0] for col in cursor.description]
+    return {key: value for key, value in zip(col_names, row)}
+
+
 @app.route('/recipe-icon/static/favicon.ico')
 def favicon():
    return send_from_directory(app.static_folder, 'favicon.ico')
 
-def get_db():
+
+def get_db(row_factory=sqlite3.Row):
     db = getattr(g, '_database', None)
     if db is None:
         db = g._database = sqlite3.connect(f"{data_dir}/recipe.db")
         # use a Row factory for named access
-        db.row_factory = sqlite3.Row
+        db.row_factory = row_factory
+
     return db
+
 
 @app.teardown_appcontext
 def close_connection(exception):
     db = getattr(g, '_database', None)
     if db is not None:
         db.close()
+
 
 def populate_recipe_list():
     db = get_db()
@@ -53,6 +61,21 @@ def populate_recipe_list():
     column_vals = dict([(c, [row[c] for row in rows]) for c in columns])
 
     return column_vals
+
+@app.route('/recipe-site/recipe-list.json', methods=['GET'])
+def recipe_lister():
+    db = get_db(row_factory=dict_factory)
+    cur = db.cursor()
+    query = cur.execute('''
+    SELECT
+       recipe_id
+      ,recipe_name
+    FROM recipes;
+    ''')
+
+    # get data
+    rows = query.fetchall()
+    return rows
 
 
 @app.route('/recipe-site')
@@ -238,37 +261,8 @@ def render_grocery_print():
 
 @app.route('/recipe-site/recipe-scheduler/', methods=['GET'])
 def render_recipe_scheduler():
-    week_start = request.args.get('week-start')
-    recipe_data = populate_recipe_list()
-
-    db = get_db()
-    cur = db.cursor()
-    cur.execute('''
-        SELECT
-           rs.recipe_id
-          ,rs.day_of_week
-          ,rs.quantity
-        FROM recipe_schedule as rs
-        WHERE week_start = ?
-        ''',
-        (week_start,)
-    )
-    rows = cur.fetchall()
-
-    # convert values
-    columns = [desc[0] for desc in cur.description]
-    column_vals = dict([(c, [row[c] for row in rows]) for c in columns])
-
-    print(column_vals)
-
     return render_template(
-        'recipe-scheduler.html',
-        week_start=datetime.strptime(week_start, "%Y-%m-%d").strftime("%Y-%m-%d"),
-        recipe_id=recipe_data['recipe_id'],
-        recipe_name=recipe_data['recipe_name'],
-        scheduled_recipe_ids = column_vals['recipe_id'],
-        scheduled_day_of_week = column_vals['day_of_week'],
-        scheduled_quantities = column_vals['quantity']
+        'recipe-scheduler.html'
     )
 
 
@@ -371,6 +365,7 @@ def schedule_recipes():
     db.commit()
 
     return "schedule-success"
+
 
 @app.route('/recipe-site/static/<path:path>')
 def send_js(path):

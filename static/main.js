@@ -5,12 +5,6 @@ function onLoadPage(){
    });
 }
 
-function getSunday(d) {
-  var d = new Date();
-  d.setUTCDate(d.getUTCDate() - d.getUTCDay());
-  return d.toISOString().slice(0, 10);
-}
-
 function recipeRedirect(){
   var recipe_id = document.querySelector("#recipe_list").value;
   console.log(recipe_id);
@@ -26,6 +20,5 @@ function todaysRecipeRedirect(){
 
 function scheduleRedirect(){
   var d = new Date();
-  var week_begin = getSunday(d);
-  location.href = `/recipe-site/recipe-scheduler/?week-start=${week_begin}`;
+  location.href = '/recipe-site/recipe-scheduler/';
 }
