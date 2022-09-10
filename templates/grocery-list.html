@@ -18,10 +18,12 @@
       <h2> Recipes </h2>
       <div id="recipe-div">
         <table id="recipe-table" width="100%">
-          <col style="width:75%">
+          <col style="width:5%">
+          <col style="width:70%">
           <col style="width:25%">
           <thead>
           <tr>
+            <th></th>
             <th><h3>Recipe</h3></th>
             <th><h3>Quantity</h3></th>
           </tr>
@@ -33,11 +35,10 @@
       <br />
       <div>
         <button class="btn btn-primary" onclick="plusRow()"><i class="bi bi-plus-square"></i> Add Recipe</button>
-        <button class="btn btn-primary" onclick="minusRow()"><i class="bi bi-dash-square"></i> Remove Recipe</button>
-        <button class="btn btn-primary" onclick="getGroceryListPrint()"><i class="bi bi-list-ol"></i> Get Grocery List</button>
       </div>
       <br />
       <div>
+        <button class="btn btn-primary" onclick="getGroceryListPrint()"><i class="bi bi-list-ol"></i> Get Grocery List</button>
         <button class="btn btn-primary" onclick="window.location.href='/recipe-site/'"><i class="bi bi-house-fill"></i> Go Home</button>
       </div>
     </div>
