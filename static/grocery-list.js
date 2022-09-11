@@ -23,14 +23,24 @@ function populateSelect(selectId, options) {
   });
 }
 
+function getNewId() {
+  const idTimePart = (new Date()).getTime();
+  const idRandPart = Math.floor(10000000 * Math.random() / 2);
+  const id = (idTimePart + idRandPart).toString(16).slice(2);
+
+  return id;
+}
+
+
 
 function addTableRow(tableId, options) {
   const tbl = document.getElementById(tableId);
-  const idTimePart = (new Date()).getTime();
-  const idRandPart = Math.floor(10000000 * Math.random() / 2);
+  // const idTimePart = (new Date()).getTime();
+  // const idRandPart = Math.floor(10000000 * Math.random() / 2);
 
   // add me to the list
-  const id = (idTimePart + idRandPart).toString(16).slice(2);
+  //const id = (idTimePart + idRandPart).toString(16).slice(2);
+  const id = getNewId();
   recipeRowIds.add(id);
 
   // the new row
@@ -89,8 +99,9 @@ function minusRow(rowId) {
 
 function getRecipeIds() {
   var recipeIds = [];
-  for (const id in recipeRowIds) {
-    var selId = `recipe-select-${id}`;
+
+  for (const rowId of recipeRowIds) {
+    var selId = `recipe-select-${rowId}`;
     var recipe = document.getElementById(selId);
     recipeIds.push(recipe.value);
   }
@@ -100,7 +111,7 @@ function getRecipeIds() {
 
 function getRecipeCounts() {
   var recipeCnts = [];
-  for (const id in recipeRowIds) {
+  for (const id of recipeRowIds) {
     var selId = `recipe-count-${id}`;
     var recipe = document.getElementById(selId);
     recipeCnts.push(recipe.value);
