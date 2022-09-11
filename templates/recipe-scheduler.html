@@ -48,14 +48,14 @@
           <tr>
             <td id="date-{{day}}">{{day}}</td>
             <td>
-              {% if day != "sun" %}
+              {% if day != "Sunday" %}
               <button class="button middle" onclick="moveUp('{{day}}')">
                 <i class="bi bi-arrow-up" style="cursor: pointer"></i>
               </button>
               {% endif %}
             </td>
             <td>
-              {% if day != "sat" %}
+              {% if day != "Saturday" %}
               <button class="button middle" onclick="moveDown('{{day}}')">
                 <i class="bi bi-arrow-down" style="cursor: pointer"></i>
               </button>
