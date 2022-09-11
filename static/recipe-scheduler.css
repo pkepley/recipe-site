@@ -10,13 +10,33 @@ button.upper:hover {
     color:white;
     background-color:#183fcc;
 }
+@media(hover: none) {
+  button.upper:hover {
+    color:#183fcc;
+    background-color:transparent;
+  }
+}
+button.upper:active {
+    color:white;
+    background-color:#183fcc;
+}
 
 button.middle {
     all:unset;
     color:#183fcc;
     cursor:pointer;
 }
-button.:hover {
+button.middle:hover {
+    color:white;
+    background-color:#183fcc;
+}
+@media(hover: none) {
+  button.middle:hover {
+    color:#183fcc;
+    background-color:transparent;
+  }
+}
+button.middle:active {
     color:white;
     background-color:#183fcc;
 }
@@ -31,6 +51,16 @@ button.lower {
     cursor:pointer;
 }
 button.lower:hover {
+    color:white;
+    background-color:#183fcc;
+}
+@media(hover: none) {
+  button.lower:hover {
+    color:#183fcc;
+    background-color:transparent;
+  }
+}
+button.lower:active {
     color:white;
     background-color:#183fcc;
 }
