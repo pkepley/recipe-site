@@ -14,7 +14,7 @@ function enableCount(i) {
   document.getElementById(cntId).value    = 1;
 }
 
-function populateSelect(i, options) {
+function populateSelect(i) {
   const selId = `recipe-select-${weekDays[i]}`;
   const sel = document.getElementById(selId);
 
@@ -25,20 +25,37 @@ function populateSelect(i, options) {
   opt.text = "-- select an option --";
   sel.add(opt);
 
-  //for (var k of Object.keys(options)) {
-  for (const option of options) {
-    var opt = document.createElement("option");
-    opt.value = option["recipe_id"];
-    opt.text = option["recipe_name"];//options[k];
-    sel.add(opt);
-  }
-
   $("#" + selId).selectize({
-    persist: false,
     create: false,
-    sortField: "text",
+    searchField: "recipe_name",
+    labelField:  "recipe_name",
+    sortField:   "recipe_name",
+    valueField:  "recipe_id",
     maxItems: 1,
     closeAfterSelect: true,
+    render: {
+      option: function (item, escape) {
+        return (
+         "<div>" +
+         "<span>" + item.recipe_name + "</span>" +
+         "</div>"
+        );
+      },
+    },
+    load: function (query, callback) {
+      if (!query.length) return callback();
+      $.ajax({
+        url: "../recipe-search?search-terms=" + encodeURIComponent(query),
+        type: "GET",
+        error: function () {
+          callback();
+        },
+        success: function (res) {
+          console.log(res)
+          callback(res);
+        },
+      });
+    },
     onChange: function(value){
       if (value != "") {
         enableCount(i);
@@ -146,19 +163,39 @@ function getGroceryList() {
   var newUrl = "/recipe-site/recipes-scheduled?week-start=" + weekStart;
 
   return $.getJSON(newUrl).then(function(data) {
-    return data;
+    var rslt = {
+      day_of_week: [],
+      recipe_id: [],
+      recipe_name: [],
+      quantity: []
+    }
+
+    for (const item in data) {
+      rslt.day_of_week.push(data[item].day_of_week);
+      rslt.recipe_id.push(data[item].recipe_id);
+      rslt.recipe_name.push(data[item].recipe_name);
+      rslt.quantity.push(data[item].quantity);
+    }
+
+    return rslt;
   });
 }
 
-function setRecipe(i, recipe_id, recipe_amount) {
+function setRecipe(i, recipe_id, recipe_name, recipe_amount) {
   // set recipe
   const selId = `recipe-select-${weekDays[i]}`;
   var $select = $('#' + selId).selectize();
   var control = $select[0].selectize;
-  control.setValue(recipe_id);
-
-  // set amount
   var cntId = `cnt-${weekDays[i]}`;
+
+  // update the selectize - must be done BEFORE updating the amount
+  control.clear();
+  if (recipe_amount > 0) {
+    control.addOption({recipe_id: recipe_id, recipe_name: recipe_name})
+    control.setValue(recipe_id, false);
+  }
+
+  // set the amount
   document.getElementById(cntId).value = recipe_amount;
 }
 
@@ -171,18 +208,20 @@ function getRecipe(i) {
   // recipe_amount
   const cntId = `cnt-${weekDays[i]}`;
   const recipe_amount = document.getElementById(cntId).value;
+  let recipe_name = (recipe_amount > 0 ) ? control.getItem(control.getValue())[0].innerHTML : 0;
 
   return {
     recipe_id: control.getValue(),
-    recipe_amount: recipe_amount
+    recipe_amount: recipe_amount,
+    recipe_name: recipe_name
   }
 }
 
 function swapRecipes(srcIdx, tgtIdx) {
   const srcRecipeData = getRecipe(srcIdx);
   const tgtRecipeData = getRecipe(tgtIdx);
-  setRecipe(tgtIdx, srcRecipeData.recipe_id, srcRecipeData.recipe_amount);
-  setRecipe(srcIdx, tgtRecipeData.recipe_id, tgtRecipeData.recipe_amount);
+  setRecipe(tgtIdx, srcRecipeData.recipe_id, srcRecipeData.recipe_name, srcRecipeData.recipe_amount);
+  setRecipe(srcIdx, tgtRecipeData.recipe_id, tgtRecipeData.recipe_name, tgtRecipeData.recipe_amount);
 }
 
 function moveUp(srcDay) {
@@ -223,15 +262,17 @@ function workSaved() {
   var recipeIds    = getRecipeIds();
   var recipeCounts = getRecipeCounts();
   var weekStart    = getWeekStart();
-  console.log(recipeIds)
 
   var gl_in = filterGroceryList(
     [0,1,2,3,4,5,6],
     recipeIds,
     recipeCounts
-  )
+  );
 
   return getGroceryList().then(function(gl_out){
+    console.log(gl_in);
+    console.log(gl_out);
+
     rslt_okay = true;
     rslt_okay = rslt_okay & gl_in['weekdays-scheduled'].length == gl_out['day_of_week'].length
     rslt_okay = rslt_okay & gl_in['recipe-counts'].length == gl_out['quantity'].length
@@ -329,7 +370,7 @@ function updatePage() {
       disableCount(i);
     }
     for(let j = 0; j < gl['day_of_week'].length; j++) {
-      setRecipe(gl['day_of_week'][j], gl['recipe_id'][j], gl['quantity'][j]);
+      setRecipe(gl['day_of_week'][j], gl['recipe_id'][j], gl['recipe_name'][j], gl['quantity'][j]);
     }
   })
 }
@@ -345,10 +386,10 @@ function onLoadPage() {
 
   setWeekStart(getThisSunday());
 
-  fetchRecipeList().then(function(recipe_list) {
+  //fetchRecipeList().then(function(recipe_list) {
     // populate each selectize
     for (let i = 0; i < 7; i++) {
-      populateSelect(i, recipe_list);
+      populateSelect(i);//, recipe_list);
       disableCount(i);
 
       // add an event listener to clear the recipe if zero are requested
@@ -357,6 +398,6 @@ function onLoadPage() {
 
     // pull in
     updatePage();
-  })
+  //})
 
 }
