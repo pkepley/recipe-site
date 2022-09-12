@@ -36,7 +36,7 @@ function populateSelect(i) {
     render: {
       option: function (item, escape) {
         return (
-         "<div>" +
+          "<div style='margin-bottom: 5px;'>" +
          "<span>" + item.recipe_name + "</span>" +
          "</div>"
         );

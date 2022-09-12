@@ -1,7 +1,8 @@
 var recipeRowIds = new Set();
+var totalRecipeCnts = 0;
 
-function populateSelect(selectId, options) {
-  const sel = document.getElementById(selectId);
+function populateSelect(selId) {
+  const sel = document.getElementById(selId);
 
   var opt = document.createElement("option");
   opt.setAttribute("selected", "true");
@@ -10,16 +11,44 @@ function populateSelect(selectId, options) {
   opt.text = "-- select an option --";
   sel.add(opt);
 
-  for (var k of Object.keys(options)) {
-    var opt = document.createElement("option");
-    opt.value = k;
-    opt.text = options[k];
-    sel.add(opt);
-  }
-
-  $("#" + selectId).selectize({
-    create: true,
-    sortField: "text"
+  $("#" + selId).selectize({
+    create: false,
+    searchField: "recipe_name",
+    labelField:  "recipe_name",
+    sortField:   "recipe_name",
+    valueField:  "recipe_id",
+    maxItems: 1,
+    closeAfterSelect: true,
+    render: {
+      option: function (item, escape) {
+        return (
+          "<div style='margin-bottom: 5px;'>" +
+         "<span>" + item.recipe_name + "</span>" +
+         "</div>"
+        );
+      },
+    },
+    load: function (query, callback) {
+      if (!query.length) return callback();
+      $.ajax({
+        url: "../recipe-search?search-terms=" + encodeURIComponent(query),
+        type: "GET",
+        error: function () {
+          callback();
+        },
+        success: function (res) {
+          console.log(res)
+          callback(res);
+        },
+      });
+    },
+    onChange: function(value){
+      if (value != "") {
+        enableCount(i);
+      } else{
+        disableCount(i);
+      }
+    },
   });
 }
 
@@ -32,14 +61,10 @@ function getNewId() {
 }
 
 
-
 function addTableRow(tableId, options) {
   const tbl = document.getElementById(tableId);
-  // const idTimePart = (new Date()).getTime();
-  // const idRandPart = Math.floor(10000000 * Math.random() / 2);
 
   // add me to the list
-  //const id = (idTimePart + idRandPart).toString(16).slice(2);
   const id = getNewId();
   recipeRowIds.add(id);
 
@@ -72,21 +97,26 @@ function addTableRow(tableId, options) {
   var selId = `recipe-select-${id}`;
   sel.setAttribute('id', selId);
   selCell.appendChild(sel);
-  populateSelect(selId, options);
+  populateSelect(selId);
 
   // the recipe count drop down
   var cnt = document.createElement("input");
   var cntId = `recipe-count-${id}`;
   cnt.setAttribute('id', cntId);
-  cnt.value = 1;
-  cnt.type = "number"
-  cnt.min = 1;
+  cnt.setAttribute('value', 1);
+  cnt.setAttribute('type', 'number');
+  cnt.setAttribute('min', 1);
   cnt.setAttribute('class', "form-control");
+
+  //cnt.value = 1;
+  //cnt.type = "number"
+  //cnt.min = 1;
+  //cnt.setAttribute('class', "form-control");
   cntCell.appendChild(cnt);
 }
 
 function plusRow() {
-  addTableRow("recipe-table-body", recipe_list);
+  addTableRow("recipe-table-body", []);
 }
 
 function minusRow(rowId) {
@@ -131,5 +161,5 @@ function getGroceryListPrint() {
 }
 
 function onLoadPage() {
-  addTableRow("recipe-table-body", recipe_list);
+  addTableRow("recipe-table-body", []);//, recipe_list);
 }

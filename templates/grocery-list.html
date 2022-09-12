@@ -4,13 +4,6 @@
     <title>Grocery List Builder</title>
     {% include 'common-loads.html' %}
     <script src="/recipe-site/static/grocery-list.js"></script>
-    <script>
-      var recipe_list = {
-	{% for recipe_name in recipe_name %}
-	    {{recipe_id[loop.index0]}}: "{{recipe_name}}",
-	{% endfor %}
-      };
-    </script>
   </head>
   <body onload="onLoadPage()">
     <div class="container">
