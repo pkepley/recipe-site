@@ -22,7 +22,7 @@ function populateSelect(i) {
   opt.setAttribute("selected", "true");
   opt.setAttribute("value", "");
   opt.setAttribute("disabled", "");
-  opt.text = "-- select an option --";
+  opt.text = "-- Search for a Recipe --";
   sel.add(opt);
 
   $("#" + selId).selectize({
