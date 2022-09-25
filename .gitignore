@@ -6,3 +6,4 @@ static/third-party
 static/favicon.ico
 .env
 .flaskenv
+todo.org
