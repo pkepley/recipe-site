@@ -146,6 +146,9 @@ if __name__ == "__main__":
     data_dir_in  = root_dir/"content"
     data_dir_out = root_dir/"data"
 
+    # ensure output data dir exists
+    data_dir_out.mkdir(exist_ok=True, parents=True)
+
     # list to hold extracted results
     fps = data_dir_in.glob(f"*.org")
     extracted_recipes = extract_recipes_from_fps(fps)
