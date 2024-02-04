@@ -77,7 +77,7 @@ def extract_ingredients(content: str):
 
 
 def extract_directions(content: str):
-    directions_re_str = r"(?:^\s*\d\.\s)(.+?)(?=\n\s*\d\.\s|\Z)"
+    directions_re_str = r"(?:^\s*\d+\.\s)(.+?)(?=\n\s*\d+\.\s|\Z)"
     rslts = re.findall(directions_re_str, content, re.MULTILINE|re.DOTALL)
 
     return rslts
