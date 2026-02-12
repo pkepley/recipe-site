@@ -16,6 +16,16 @@ app.static_folder = app.root_path + "/../static/"
 data_dir = app.root_path + "/../data/"
 print(f"Using data_dir = {data_dir}")
 
+WEEKDAYS = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+]
+
 
 def dict_factory(cur:sqlite3.Cursor, row:sqlite3.Row):
     col_names = [col[0] for col in cur.description]
@@ -146,6 +156,50 @@ def get_days_recipe_id(ymd_date):
     return days_recipe_id
 
 
+def get_current_week_start():
+    """
+    Return the current week's start date (Sunday) as YYYY-MM-DD.
+    This matches the JavaScript getThisSunday() logic used by the scheduler.
+    """
+    d = datetime.utcnow().date()
+    # Python weekday(): Monday=0..Sunday=6; JS getUTCDay(): Sunday=0..Saturday=6
+    js_day_index = (d.weekday() + 1) % 7
+    sunday = d - timedelta(days=js_day_index)
+    return sunday.strftime("%Y-%m-%d")
+
+
+def get_today_date():
+    """
+    Return today's date as YYYY-MM-DD (UTC), matching scheduled_day format.
+    """
+    return datetime.utcnow().strftime("%Y-%m-%d")
+
+
+def get_weekly_schedule(week_start):
+    """
+    Fetch the scheduled recipes for a given week_start (YYYY-MM-DD).
+    """
+    db = get_db(row_factory=dict_factory)
+    cur = db.cursor()
+    cur.execute('''
+        SELECT
+           rs.scheduled_day
+          ,rs.recipe_id
+          ,r.recipe_name
+          ,rs.day_of_week
+          ,rs.quantity
+        FROM recipe_schedule as rs
+        LEFT JOIN recipes as r
+          ON rs.recipe_id = r.recipe_id
+        WHERE week_start = ?
+        ''',
+        (week_start,)
+    )
+    rows = cur.fetchall()
+
+    return rows
+
+
 @app.route('/recipe-icon/static/favicon.ico')
 def favicon():
    return send_from_directory(app.static_folder, 'favicon.ico')
@@ -192,12 +246,19 @@ def recipe_lister():
 def recipe_site():
     recipe_data = populate_recipe_list()
     todays_recipe_id = get_todays_recipe_id()
+    week_start = get_current_week_start()
+    weekly_schedule = get_weekly_schedule(week_start)
+    today = get_today_date()
 
     return render_template(
         'index.html',
         todays_recipe_id = todays_recipe_id,
         recipe_id        = recipe_data['recipe_id'],
-        recipe_name      = recipe_data['recipe_name']
+        recipe_name      = recipe_data['recipe_name'],
+        week_start       = week_start,
+        weekly_schedule  = weekly_schedule,
+        weekdays         = WEEKDAYS,
+        today            = today,
     )
 
 
