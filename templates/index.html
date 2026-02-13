@@ -49,11 +49,9 @@
       {% else %}
       <p>No recipes scheduled for this week (starting {{ week_start }}).</p>
       {% endif %}
-      <p>
-        <a href="/recipe-site/recipe-scheduler/">
-          <i class="bi bi-pencil"></i> Edit this week's schedule
-        </a>
-      </p>
+      <a href="/recipe-site/recipe-scheduler/" class="btn btn-primary">
+        <i class="bi bi-pencil"></i> Edit this week's schedule
+      </a>
     </div>
     <br />
     <div id="selection_div">
@@ -66,6 +64,12 @@
       </select>
       <button class="btn btn-primary" onclick="recipeRedirect()">Show Recipe</button>
     </div>    
+    <br />
+    <div>
+      <h2><i class="bi bi-bar-chart"></i> Most Popular Recipes</h2>
+      <p>See which recipes you've scheduled most often.</p>
+      <a href="/recipe-site/top-recipes/" class="btn btn-primary">View popularity table</a>
+    </div>
     <br />
     <!--
     <div>

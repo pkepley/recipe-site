@@ -200,6 +200,70 @@ def get_weekly_schedule(week_start):
     return rows
 
 
+def get_top_scheduled_recipes(
+    limit: int,
+    offset: int = 0,
+    sort_key: str = "times",
+    sort_direction: str = "desc",
+):
+    """
+    Return a page of the most frequently scheduled recipes.
+    Aggregates over the recipe_schedule table and joins recipe names.
+    """
+    # Map requested sort key/direction to safe SQL fragments
+    if sort_key not in {"name", "times", "last"}:
+        sort_key = "times"
+
+    sort_direction = sort_direction.lower()
+    if sort_direction not in {"asc", "desc"}:
+        sort_direction = "desc"
+
+    if sort_key == "name":
+        order_clause = f"r.recipe_name {sort_direction.upper()}, times_cooked DESC"
+    elif sort_key == "last":
+        order_clause = f"last_cooked {sort_direction.upper()}, times_cooked DESC"
+    else:
+        # default: sort by times cooked
+        order_clause = f"times_cooked {sort_direction.upper()}, last_cooked DESC"
+
+    db = get_db(row_factory=dict_factory)
+    cur = db.cursor()
+    query = f'''
+        SELECT
+           rs.recipe_id
+          ,r.recipe_name
+          ,SUM(COALESCE(rs.quantity, 1)) AS times_cooked
+          ,MAX(rs.scheduled_day)         AS last_cooked
+        FROM recipe_schedule AS rs
+        LEFT JOIN recipes AS r
+          ON rs.recipe_id = r.recipe_id
+        GROUP BY rs.recipe_id, r.recipe_name
+        ORDER BY {order_clause}
+        LIMIT ? OFFSET ?
+    '''
+    cur.execute(query, (limit, offset))
+    rows = cur.fetchall()
+
+    return rows
+
+
+def get_scheduled_recipe_count() -> int:
+    """
+    Return the total number of distinct recipes that have ever been scheduled.
+    """
+    db = get_db()
+    cur = db.cursor()
+    cur.execute(
+        '''
+        SELECT COUNT(DISTINCT recipe_id) AS total_recipes
+        FROM recipe_schedule
+        '''
+    )
+    row = cur.fetchone()
+    total = row[0] if row and row[0] is not None else 0
+    return total
+
+
 @app.route('/recipe-icon/static/favicon.ico')
 def favicon():
    return send_from_directory(app.static_folder, 'favicon.ico')
@@ -349,6 +413,68 @@ def render_grocery_print():
 def render_recipe_scheduler():
     return render_template(
         'recipe-scheduler.html'
+    )
+
+
+@app.route('/recipe-site/top-recipes/', methods=['GET'])
+def render_top_recipes():
+    """
+    Render a paginated table of the most frequently scheduled recipes.
+    The page size defaults to 10 recipes per page.
+    """
+    page_param = request.args.get('page', default='1')
+    per_page_param = request.args.get('per_page', default='10')
+    sort_key = request.args.get('sort', default='times')
+    sort_direction = request.args.get('direction', default='desc')
+
+    try:
+        page = int(page_param)
+    except (TypeError, ValueError):
+        page = 1
+
+    try:
+        per_page = int(per_page_param)
+    except (TypeError, ValueError):
+        per_page = 10
+
+    if page < 1:
+        page = 1
+    if per_page <= 0:
+        per_page = 10
+    elif per_page > 100:
+        per_page = 100
+
+    total_recipes = get_scheduled_recipe_count()
+
+    if total_recipes > 0:
+        total_pages = (total_recipes + per_page - 1) // per_page
+        if page > total_pages:
+            page = total_pages
+        offset = (page - 1) * per_page
+        top_recipes = get_top_scheduled_recipes(
+            per_page,
+            offset,
+            sort_key=sort_key,
+            sort_direction=sort_direction,
+        )
+    else:
+        total_pages = 1
+        top_recipes = []
+
+    has_prev = page > 1
+    has_next = total_recipes > page * per_page
+
+    return render_template(
+        'top-recipes.html',
+        top_recipes=top_recipes,
+        page=page,
+        per_page=per_page,
+        total_recipes=total_recipes,
+        total_pages=total_pages,
+        has_prev=has_prev,
+        has_next=has_next,
+        sort_key=sort_key,
+        sort_direction=sort_direction,
     )
 
 
